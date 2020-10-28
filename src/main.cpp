@@ -222,7 +222,7 @@ int main(int argc, char** argv)
         ("fire,f", po::value<resistance::item_t>(), "required fire resistance")
         ("cold,c", po::value<resistance::item_t>(), "required cold resistance")
         ("lightning,l", po::value<resistance::item_t>(), "required lightning resistance")
-        ("chaos,f", po::value<resistance::item_t>()->default_value(0), "required chaos resistance");
+        ("chaos,ch", po::value<resistance::item_t>()->default_value(0), "required chaos resistance");
 
     po::positional_options_description p;
     p.add("fire", 1);
@@ -264,9 +264,9 @@ int main(int argc, char** argv)
         return 3;
     }
 
-    if (!vm.count("cold"))
+    if (!vm.count("chaos"))
     {
-        std::cerr << "Error: specify required cold resistance" << std::endl;
+        std::cerr << "Error: specify required chaos resistance" << std::endl;
         return 3;
     }
 
