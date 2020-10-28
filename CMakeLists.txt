@@ -45,4 +45,9 @@ add_library(recap ${recap_headers} ${recap_sources})
 add_executable(recap_cli ${recap_cli})
 
 # Link
-target_link_libraries(recap_cli recap Threads::Threads ${TBB_LIBRARIES} ${TBB_LIBRARIES_RELEASE} ${Boost_LIBRARIES})
+target_link_libraries(recap_cli 
+    recap 
+    Threads::Threads 
+    ${TBB_LIBRARIES} 
+    ${TBB_LIBRARIES_RELEASE} 
+    ${Boost_LIBRARIES})

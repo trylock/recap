@@ -98,16 +98,11 @@ namespace recap
          */
         inline resistance operator-(const resistance& other) const
         {
-            auto cond_sub = [](auto&& lhs, auto&& rhs)
-            {
-                return static_cast<item_t>(lhs >= rhs ? lhs - rhs : 0);
-            };
-
             return resistance{
-                cond_sub(fire(), other.fire()),
-                cond_sub(cold(), other.cold()),
-                cond_sub(lightning(), other.lightning()),
-                cond_sub(chaos(), other.chaos())
+                static_cast<item_t>(fire() >= other.fire() ? fire() - other.fire() : 0),
+                static_cast<item_t>(cold() >= other.cold() ? cold() - other.cold() : 0),
+                static_cast<item_t>(lightning() >= other.lightning() ? lightning() - other.lightning() : 0),
+                static_cast<item_t>(chaos() >= other.chaos() ? chaos() - other.chaos() : 0)
             };
         }
         
