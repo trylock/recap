@@ -101,6 +101,6 @@ recap::assignment recap::find_assignment(
         });
         std::swap(next_best_cost, best_cost);
     }
-
+    
     return std::move(best_cost[to_index(required)]);
 }

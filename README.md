@@ -11,7 +11,7 @@ ReCap has a command line interface `recap_cli`. It expects path to a file with r
 - `--fire` or `-f`: required fire resistance as a whole non-negative number
 - `--cold` or `-c`: required cold resistance as a whole non-negative number
 - `--lightning` or `-l`: required lightning resistance as a whole non-negative number
-- `--chaos` or `-ch` (default 0): required chaos resistance as a whole non-negative number
+- `--chaos` (default 0): required chaos resistance as a whole non-negative number
 - `--armour` or `-a` (default 7): number of armour slots 
 - `--jewelery` or `-j` (default 3): number of jewelery slots 
 

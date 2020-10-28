@@ -222,7 +222,7 @@ int main(int argc, char** argv)
         ("fire,f", po::value<resistance::item_t>(), "required fire resistance")
         ("cold,c", po::value<resistance::item_t>(), "required cold resistance")
         ("lightning,l", po::value<resistance::item_t>(), "required lightning resistance")
-        ("chaos,ch", po::value<resistance::item_t>()->default_value(0), "required chaos resistance");
+        ("chaos,x", po::value<resistance::item_t>()->default_value(0), "required chaos resistance");
 
     po::positional_options_description p;
     p.add("fire", 1);
@@ -231,8 +231,17 @@ int main(int argc, char** argv)
     p.add("chaos", 1);
 
     po::variables_map vm;
-    po::store(po::command_line_parser(argc, argv).options(desc).positional(p).run(), vm);
-    po::notify(vm);
+
+    try 
+    {
+        po::store(po::command_line_parser(argc, argv).options(desc).positional(p).run(), vm);
+        po::notify(vm);
+    }
+    catch (boost::program_options::error& err)
+    {
+        std::cerr << err.what() << std::endl;
+        return 1;
+    }
 
     if (vm.count("help"))
     {
