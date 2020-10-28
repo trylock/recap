@@ -7,10 +7,9 @@
 namespace recap
 {
     // 4-tuple of resistances
-    struct resistance
+    class resistance
     {
-        std::uint64_t value;
-
+    public:
         using item_t = std::uint16_t; 
 
         // DefaultConstructible
@@ -20,19 +19,12 @@ namespace recap
         resistance(const resistance&) = default;
         resistance& operator=(const resistance&) = default;
         
-        inline resistance(item_t fire, item_t cold, item_t lightning, item_t chaos)
+        inline resistance(item_t fire, item_t cold, item_t lightning, item_t chaos) : 
+            fire_(fire), 
+            cold_(cold), 
+            lightning_(lightning), 
+            chaos_(chaos)
         {
-            assert(sizeof(item_t) == 2);
-            assert(sizeof(std::uint64_t) == 8);
-
-            value = 0;
-            value |= static_cast<item_t>(fire);
-            value <<= 16;
-            value |= static_cast<item_t>(cold);
-            value <<= 16;
-            value |= static_cast<item_t>(lightning);
-            value <<= 16;
-            value |= static_cast<item_t>(chaos);
         }
 
         /** Create a 0 resistance object
@@ -41,7 +33,7 @@ namespace recap
          */
         inline static resistance make_zero()
         {
-            return resistance{ 0, 0, 0, 0 };    
+            return resistance{ 0, 0, 0, 0 };
         }
 
         /** Get fire resistance
@@ -50,7 +42,7 @@ namespace recap
          */
         inline item_t fire() const
         {
-            return static_cast<item_t>((value >> 48) & 0xFFFF);
+            return fire_;
         }
         
         /** Get cold resistance
@@ -59,7 +51,7 @@ namespace recap
          */
         inline item_t cold() const
         {
-            return static_cast<item_t>((value >> 32) & 0xFFFF);
+            return cold_;
         }
         
         /** Get lightning resistance
@@ -68,7 +60,7 @@ namespace recap
          */
         inline item_t lightning() const
         {
-            return static_cast<item_t>((value >> 16) & 0xFFFF);
+            return lightning_;
         }
         
         /** Get chaos resistance
@@ -77,7 +69,7 @@ namespace recap
          */
         inline item_t chaos() const
         {
-            return static_cast<item_t>(value & 0xFFFF);
+            return chaos_;
         }
 
         /** Add 2 resistances together
@@ -155,13 +147,22 @@ namespace recap
         
         inline bool operator==(const resistance& other) const
         {
-            return value == other.value;
+            return fire() == other.fire() && 
+                cold() == other.cold() && 
+                lightning() == other.lightning() && 
+                chaos() == other.chaos();
         }
         
         inline bool operator!=(const resistance& other) const
         {
-    return value != other.value;
+            return !operator==(other);
         }
+
+    private:
+        item_t fire_;
+        item_t cold_;
+        item_t lightning_;
+        item_t chaos_;
     };
 }
 
