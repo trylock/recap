@@ -6,7 +6,7 @@
 
 namespace recap
 {
-    // 4-tuple of resistances
+    // 4-tuple of resistances (immutable)
     class resistance
     {
     public:
@@ -94,7 +94,7 @@ namespace recap
          * 
          * @param other Right hand side of the operator
          * 
-         * @returns new resistance
+         * @returns new resistance 
          */
         inline resistance operator-(const resistance& other) const
         {

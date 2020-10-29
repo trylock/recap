@@ -1,7 +1,5 @@
 #include "assignment.hpp"
 
-#include <iostream>
-
 template<typename IndexType>
 struct min_cost_assign
 {
@@ -138,11 +136,14 @@ recap::assignment recap::find_assignment(
     // convert it to the output type
     assignment result;
     result.cost() = best_node.cost;
-    result.recipes().resize(slots.size());
-    
-    for (std::size_t i = 0; i < slots.size(); ++i)
+
+    if (result.cost() != recipe::MAX_COST)
     {
-        result.recipes()[i] = recipes[best_node.recipes[i]];
+        result.recipes().resize(slots.size());
+        for (std::size_t i = 0; i < slots.size(); ++i)
+        {
+            result.recipes()[i] = recipes[best_node.recipes[i]];
+        }
     }
     
     return result;
