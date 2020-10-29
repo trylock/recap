@@ -213,6 +213,11 @@ int main(int argc, char** argv)
 
     namespace po = boost::program_options;
 
+    // input limits
+    constexpr std::size_t MAX_ARMOUR_SLOT_COUNT = 7;
+    constexpr std::size_t MAX_JEWELERY_SLOT_COUNT = 3;
+    constexpr std::size_t MAX_RECIPE_COUNT = 256;
+
     po::options_description desc{ "Allowed options" };
     desc.add_options()
         ("help,h", "show help message")
@@ -252,31 +257,31 @@ int main(int argc, char** argv)
     if (!vm.count("input"))
     {
         std::cerr << "Error: specify path to a file with available recipes." << std::endl;
-        return 2;
+        return 1;
     }
 
     if (!vm.count("fire"))
     {
         std::cerr << "Error: specify required fire resistance" << std::endl;
-        return 3;
+        return 1;
     }
 
     if (!vm.count("cold"))
     {
         std::cerr << "Error: specify required cold resistance" << std::endl;
-        return 3;
+        return 1;
     }
 
     if (!vm.count("lightning"))
     {
         std::cerr << "Error: specify required lightning resistance" << std::endl;
-        return 3;
+        return 1;
     }
 
     if (!vm.count("chaos"))
     {
         std::cerr << "Error: specify required chaos resistance" << std::endl;
-        return 3;
+        return 1;
     }
 
     // read recipes from file
@@ -285,6 +290,12 @@ int main(int argc, char** argv)
     {
         recipes = read_recipes(vm["input"].as<std::string>());
         std::cout << "Loaded " << recipes.size() << " recipe variants." << std::endl;
+
+        if (recipes.size() > MAX_RECIPE_COUNT)
+        {
+            std::cerr << "Error: this tool is limited to " << MAX_RECIPE_COUNT << " recipe variants at the moment." << std::endl;
+            return 1;
+        }
 
         // read required resistances
         resistance required{
@@ -295,21 +306,35 @@ int main(int argc, char** argv)
         };
 
         // read slots
+        auto armour_slot_cout = vm["armour"].as<std::size_t>();
+        if (armour_slot_cout > MAX_ARMOUR_SLOT_COUNT)
+        {
+            std::cerr << "Error: there can be at most " << MAX_ARMOUR_SLOT_COUNT << " armour slots." << std::endl;
+            return 1;
+        }
+
         std::vector<recipe::slot_t> slots;
-        for (std::size_t i = 0; i < vm["armour"].as<std::size_t>(); ++i)
+        for (std::size_t i = 0; i < armour_slot_cout; ++i)
         {
             slots.push_back(recipe::SLOT_ARMOUR);
         }
 
-        for (std::size_t i = 0; i < vm["jewelery"].as<std::size_t>(); ++i)
+        auto jewelery_slot_count = vm["jewelery"].as<std::size_t>();
+        if (jewelery_slot_count > MAX_JEWELERY_SLOT_COUNT)
+        {
+            std::cerr << "Error: there can be at most " << MAX_JEWELERY_SLOT_COUNT << " jewelery slots." << std::endl;
+            return 1;
+        }
+
+        for (std::size_t i = 0; i < jewelery_slot_count; ++i)
         {
             slots.push_back(recipe::SLOT_JEWELERY);
         }
 
         std::cout 
-            << "Armour slots: " << vm["armour"].as<std::size_t>() << std::endl 
-            << "Jewelery slots: " << vm["jewelery"].as<std::size_t>() << std::endl 
-            << "Required resistances: " 
+            << "Armour slots: " << armour_slot_cout << std::endl 
+            << "Jewelery slots: " << jewelery_slot_count << std::endl 
+            << "Required: " 
                 << required.fire() << "% fire, "
                 << required.cold() << "% cold, "
                 << required.lightning() << "% lightning, "
@@ -328,7 +353,7 @@ int main(int argc, char** argv)
     catch (invalid_input_error& err)
     {
         std::cerr << err.what() << std::endl;
-        return 4;
+        return 1;
     }
     catch (io::error::base& err)
     {

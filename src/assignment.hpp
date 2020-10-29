@@ -4,6 +4,7 @@
 #include <vector>
 #include <cassert>
 #include <cstdint>
+#include <array>
 
 #include <tbb/parallel_for.h>
 #include <tbb/blocked_range3d.h>
