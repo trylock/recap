@@ -8,10 +8,7 @@ ReCap has a command line interface `recap_cli`. It expects path to a file with r
 
 ### Options:
 - `--input` or `-i`: specifies path to a file with available recipes (you can use `data/recipes.csv` from this repository)
-- `--fire` or `-f`: required fire resistance as a whole non-negative number
-- `--cold` or `-c`: required cold resistance as a whole non-negative number
-- `--lightning` or `-l`: required lightning resistance as a whole non-negative number
-- `--chaos` (default 0): required chaos resistance as a whole non-negative number
+- `--resistances` or `-r`: list of required resistances in order: fire, cold, lightning, and chaos. Values are separated by spaces. If you only specify first few values, the rest of the values will be set to 0.
 - `--armour` or `-a` (default 7): number of armour slots 
 - `--jewelery` or `-j` (default 3): number of jewelery slots 
 
@@ -19,7 +16,7 @@ You can omit `--fire`, `--cold`, `--lightning`, `--chaos`. In that case, the fir
 
 For example, following command finds an assignment which has at least 43% fire, 76% cold, 12% lightning and 13% chaos resistance.
 
-`recap_cli -i ../data/recipes.csv 43 76 12 13` 
+`recap_cli -i ../data/recipes.csv -r 43 76 12 13` 
 
 ## Building
 

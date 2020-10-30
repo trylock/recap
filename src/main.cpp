@@ -224,22 +224,13 @@ int main(int argc, char** argv)
         ("input,i", po::value<std::string>(), "file with all available recipes")
         ("armour,a", po::value<std::size_t>()->default_value(7), "number of armour slots")
         ("jewelery,j", po::value<std::size_t>()->default_value(3), "number of jewelery slots")
-        ("fire,f", po::value<resistance::item_t>(), "required fire resistance")
-        ("cold,c", po::value<resistance::item_t>(), "required cold resistance")
-        ("lightning,l", po::value<resistance::item_t>(), "required lightning resistance")
-        ("chaos,x", po::value<resistance::item_t>()->default_value(0), "required chaos resistance");
-
-    po::positional_options_description p;
-    p.add("fire", 1);
-    p.add("cold", 1);
-    p.add("lightning", 1);
-    p.add("chaos", 1);
+        ("required,r", po::value<std::vector<resistance::item_t>>()->multitoken(), "list of required resistances (in order: fire, cold, lightning, and chaos");
 
     po::variables_map vm;
 
     try 
     {
-        po::store(po::command_line_parser(argc, argv).options(desc).positional(p).run(), vm);
+        po::store(po::command_line_parser(argc, argv).options(desc).run(), vm);
         po::notify(vm);
     }
     catch (boost::program_options::error& err)
@@ -260,28 +251,26 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    if (!vm.count("fire"))
+    // validate required resistances
+    if (!vm.count("required"))
     {
-        std::cerr << "Error: specify required fire resistance" << std::endl;
+        std::cerr << "Error: specify required resistances" << std::endl;
         return 1;
     }
 
-    if (!vm.count("cold"))
+    auto input_resistances = vm["required"].as<std::vector<resistance::item_t>>();
+    if (input_resistances.size() <= 0 || input_resistances.size() > 4)
     {
-        std::cerr << "Error: specify required cold resistance" << std::endl;
+        std::cerr 
+            << "Error: wrong number of resistances. Expected at most 4, got " 
+            << input_resistances.size() << std::endl;
         return 1;
     }
 
-    if (!vm.count("lightning"))
+    // normalize input vector size to 4
+    while (input_resistances.size() < 4)
     {
-        std::cerr << "Error: specify required lightning resistance" << std::endl;
-        return 1;
-    }
-
-    if (!vm.count("chaos"))
-    {
-        std::cerr << "Error: specify required chaos resistance" << std::endl;
-        return 1;
+        input_resistances.emplace_back(0);
     }
 
     // read recipes from file
@@ -298,11 +287,11 @@ int main(int argc, char** argv)
         }
 
         // read required resistances
-        resistance required{
-            vm["fire"].as<resistance::item_t>(),
-            vm["cold"].as<resistance::item_t>(),
-            vm["lightning"].as<resistance::item_t>(),
-            vm["chaos"].as<resistance::item_t>()
+        resistance required{ 
+            input_resistances[0], 
+            input_resistances[1],
+            input_resistances[2],
+            input_resistances[3]
         };
 
         // read slots
