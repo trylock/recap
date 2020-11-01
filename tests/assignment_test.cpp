@@ -18,7 +18,7 @@ static recap::assignment find_assignment_bf(
 
     assignment best;
     best.cost() = recipe::MAX_COST;
-    best.recipes().resize(slots.size());
+    best.assignments().resize(slots.size());
     assignment current = best;
 
     for (std::size_t i = 0; i < option_count; ++i)
@@ -40,7 +40,7 @@ static recap::assignment find_assignment_bf(
             else // recipe is aplicable 
             {
                 current.cost() += recipes[recipe_index].cost();
-                current.recipes()[j] = recipes[recipe_index];
+                current.assignments()[j] = recipe_assignment{ slots[j], recipes[recipe_index] };
                 current_res = current_res + recipes[recipe_index].resistances();
             }
 
@@ -66,17 +66,19 @@ static void verify_assignment(
         return; // no solution is a valid answer
     }
 
-    REQUIRE(slots.size() == assign.recipes().size());
+    REQUIRE(slots.size() == assign.assignments().size());
 
+    std::size_t used_slots = 0;
     recap::resistance total_res = recap::resistance::make_zero();
     recap::recipe::cost_t cost = 0;
-    for (std::size_t i = 0; i < assign.recipes().size(); ++i)
+    for (std::size_t i = 0; i < assign.assignments().size(); ++i)
     {
-        const auto& recipe = assign.recipes()[i];
-        cost += recipe.cost();
-        total_res = total_res + recipe.resistances();
+        const auto& item = assign.assignments()[i];
+        cost += item.used_recipe().cost();
+        total_res = total_res + item.used_recipe().resistances();
 
-        REQUIRE((recipe.slots() & slots[i]) != 0);
+        REQUIRE((used_slots & item.slot()) == 0);
+        used_slots |= item.slot();
     }
 
     // check that assignment doesn't lie about its cost
@@ -103,7 +105,7 @@ TEST_CASE("Find assignment if we have 0 requirements", "[assignment]")
     using namespace recap;
 
     std::vector<recipe::slot_t> slots{
-        recipe::SLOT_ARMOUR
+        recipe::SLOT_BODY
     };
 
     std::vector<recipe> recipes{
@@ -112,7 +114,7 @@ TEST_CASE("Find assignment if we have 0 requirements", "[assignment]")
 
     auto result = find_assignment(resistance::make_zero(), slots, recipes);
     REQUIRE(result.cost() == 0);
-    REQUIRE(result.recipes()[0].resistances() == resistance::make_zero());
+    REQUIRE(result.assignments().size() == 0);
 }
 
 TEST_CASE("No solution with 1 slot", "[assignment]")
@@ -137,7 +139,7 @@ TEST_CASE("Only use recipes aplicable to a given slot", "[assignment]")
     using namespace recap;
 
     std::vector<recipe::slot_t> slots{
-        recipe::SLOT_ARMOUR
+        recipe::SLOT_BODY
     };
 
     std::vector<recipe> recipes{
@@ -147,6 +149,7 @@ TEST_CASE("Only use recipes aplicable to a given slot", "[assignment]")
 
     auto result = find_assignment(resistance{ 5, 0, 0, 0 }, slots, recipes);
     REQUIRE(result.cost() == recipe::MAX_COST);
+    REQUIRE(result.assignments().size() == 0);
 }
 
 TEST_CASE("Returned assignment is optimal", "[assignment]")
@@ -154,10 +157,10 @@ TEST_CASE("Returned assignment is optimal", "[assignment]")
     using namespace recap;
 
     std::vector<recipe::slot_t> slots{
-        recipe::SLOT_ARMOUR,
-        recipe::SLOT_ARMOUR,
-        recipe::SLOT_ARMOUR,
-        recipe::SLOT_ARMOUR
+        recipe::SLOT_BODY,
+        recipe::SLOT_WEAPON1,
+        recipe::SLOT_BOOTS,
+        recipe::SLOT_GLOVES
     };
 
     std::vector<recipe> recipes{
@@ -189,10 +192,10 @@ TEST_CASE("Different types of slots", "[assignment]")
     using namespace recap;
 
     std::vector<recipe::slot_t> slots{
-        recipe::SLOT_ARMOUR,
-        recipe::SLOT_ARMOUR,
-        recipe::SLOT_JEWELERY,
-        recipe::SLOT_JEWELERY
+        recipe::SLOT_BODY,
+        recipe::SLOT_HELMET,
+        recipe::SLOT_RING1,
+        recipe::SLOT_AMULET
     };
 
     std::vector<recipe> recipes{
@@ -224,10 +227,10 @@ TEST_CASE("Exhaustive test", "[assignment][.][slow]")
     using namespace recap;
 
     std::vector<recipe::slot_t> slots{
-        recipe::SLOT_ARMOUR,
-        recipe::SLOT_ARMOUR,
-        recipe::SLOT_ARMOUR,
-        recipe::SLOT_ARMOUR
+        recipe::SLOT_BODY,
+        recipe::SLOT_HELMET,
+        recipe::SLOT_GLOVES,
+        recipe::SLOT_BOOTS
     };
 
     std::vector<recipe> recipes{

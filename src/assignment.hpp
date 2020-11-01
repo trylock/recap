@@ -14,6 +14,35 @@
 
 namespace recap
 {
+    class recipe_assignment
+    {
+    public:
+        inline recipe_assignment() : slot_(recipe::SLOT_NONE) {}
+        inline recipe_assignment(recipe::slot_t slot, recipe rec) : slot_(slot), recipe_(rec) {}
+
+        /** What recipe is used in this slot.
+         * 
+         * @return recipe used in this slot
+         */
+        inline const recipe& used_recipe() const 
+        {
+            return recipe_;
+        }
+
+        /** In which slot is this recipe
+         * 
+         * @return equipment slot
+         */
+        inline recipe::slot_t slot() const 
+        {
+            return slot_;
+        }
+
+    private:
+        recipe::slot_t slot_;
+        recipe recipe_;
+    };
+
     /** Assignment of recipes to equipment slots
      */
     class assignment
@@ -31,20 +60,20 @@ namespace recap
 
         /** Assignment of recipes to slots
          * 
-         * @returns recipe assignment (maps slot index to recipe)
+         * @returns recipe assignment (maps slot to recipe)
          */
-        inline std::vector<recipe>& recipes()
+        inline std::vector<recipe_assignment>& assignments()
         {
-            return recipes_;
+            return assignments_;
         }
 
         /** Assignment of recipes to slots
          * 
-         * @returns recipe assignment (maps slot index to recipe)
+         * @returns recipe assignment (maps slot to recipe)
          */
-        inline const std::vector<recipe>& recipes() const
+        inline const std::vector<recipe_assignment>& assignments() const
         {
-            return recipes_;
+            return assignments_;
         }
 
         /** Cost of this assignment (can be recipe::MAX_COST)
@@ -67,7 +96,7 @@ namespace recap
 
     private:
         // Used recipes
-        std::vector<recipe> recipes_;
+        std::vector<recipe_assignment> assignments_;
         // Actual cost (precomputed sum of recipe costs)
         recipe::cost_t cost_;
     };

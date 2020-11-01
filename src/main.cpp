@@ -164,9 +164,9 @@ void print_assignment(const std::vector<recap::recipe::slot_t>& slots, recap::as
 
         resistance total = resistance::make_zero(); 
         recipe::cost_t total_cost = 0;
-        for (std::size_t i = 0; i < assign.recipes().size(); ++i)
+        for (std::size_t i = 0; i < assign.assignments().size(); ++i)
         {
-            const auto& recipe = assign.recipes()[i];
+            const auto& recipe = assign.assignments()[i].used_recipe();
 
             if (slots[i] == recipe::SLOT_ARMOUR)
             {

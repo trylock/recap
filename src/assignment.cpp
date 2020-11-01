@@ -139,10 +139,13 @@ recap::assignment recap::find_assignment(
 
     if (result.cost() != recipe::MAX_COST)
     {
-        result.recipes().resize(slots.size());
         for (std::size_t i = 0; i < slots.size(); ++i)
         {
-            result.recipes()[i] = recipes[best_node.recipes[i]];
+            auto& used_recipe = recipes[best_node.recipes[i]];
+            if (used_recipe.resistances() != resistance::make_zero())
+            {
+                result.assignments().push_back(recipe_assignment{ slots[i], used_recipe });
+            }
         }
     }
     

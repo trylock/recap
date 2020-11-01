@@ -14,10 +14,23 @@ namespace recap
         enum slot_t : std::uint32_t
         {
             SLOT_NONE = 0,
+
+            // equipment slots
+            SLOT_WEAPON1 = 1,
+            SLOT_WEAPON2 = 1 << 1,
+            SLOT_HELMET = 1 << 2,
+            SLOT_BODY = 1 << 3,
+            SLOT_RING1 = 1 << 4,
+            SLOT_RING2 = 1 << 5,
+            SLOT_AMULET = 1 << 6,
+            SLOT_BELT = 1 << 7,
+            SLOT_GLOVES = 1 << 8,
+            SLOT_BOOTS = 1 << 9,
+            
             // applicable to everything but ring and amulet
-            SLOT_ARMOUR = 1,
+            SLOT_ARMOUR = SLOT_WEAPON1 | SLOT_WEAPON2 | SLOT_HELMET | SLOT_BODY | SLOT_BOOTS | SLOT_GLOVES | SLOT_BELT,
             // aplicable to ring and amulet
-            SLOT_JEWELERY = 2,
+            SLOT_JEWELERY = SLOT_RING1 | SLOT_RING2 | SLOT_AMULET,
             // aplicable to everything
             SLOT_ALL = SLOT_ARMOUR | SLOT_JEWELERY
         };

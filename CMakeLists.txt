@@ -9,10 +9,12 @@ set(TEST_DIR ${PROJECT_SOURCE_DIR}/tests)
 set(recap_headers
     ${SRC_DIR}/resistance.hpp
     ${SRC_DIR}/assignment.hpp
+    ${SRC_DIR}/reassignment.hpp
 )
 
 set(recap_sources
     ${SRC_DIR}/assignment.cpp
+    ${SRC_DIR}/reassignment.cpp
 )
 
 set(recap_cli ${SRC_DIR}/main.cpp)
@@ -20,6 +22,7 @@ set(recap_cli ${SRC_DIR}/main.cpp)
 set(recap_tests 
     ${EXTERNAL_DIR}/Catch2/catch_amalgamated.cpp
     ${TEST_DIR}/assignment_test.cpp
+    ${TEST_DIR}/reassignment_test.cpp
 )
 
 # Dependencies
@@ -31,7 +34,7 @@ find_package(TBB 2020 REQUIRED COMPONENTS tbb)
 find_package(Threads REQUIRED)
 
 # Compile options
-add_compile_options(-Wall -Wextra -pedantic -Wno-stringop-truncation -fno-omit-frame-pointer --std=c++17 -g -O3)
+add_compile_options(-Wall -Wextra -pedantic -Wno-stringop-truncation -fno-omit-frame-pointer --std=c++17 -g)
 
 # Directories
 include_directories(
