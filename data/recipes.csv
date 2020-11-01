@@ -17,8 +17,8 @@ fire,   cold,   lightning,  chaos,  value_min,  value_max,  cost,   slot
 1,      1,      0,          0,      17,         20,         30,     armour
 0,      1,      1,          0,      17,         20,         30,     armour
 1,      0,      1,          0,      17,         20,         30,     armour
-1,      1,      1,          0,      5,          8,          0,      jewelery
-1,      1,      1,          0,      9,          12,         10,     jewelery
+1,      1,      1,          0,      5,          8,          0,      jewelry
+1,      1,      1,          0,      9,          12,         10,     jewelry
 1,      0,      0,          1,      9,          10,         0,      all
 0,      1,      0,          1,      9,          10,         0,      all
 0,      0,      1,          1,      9,          10,         0,      all

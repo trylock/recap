@@ -36,11 +36,12 @@ find_package(TBB 2020 REQUIRED COMPONENTS tbb)
 find_package(Threads REQUIRED)
 
 # Compile options
-add_compile_options(-Wall -Wextra -pedantic -Wno-stringop-truncation -fno-omit-frame-pointer --std=c++17 -g)
+add_compile_options(-Wall -Wextra -pedantic -Wno-stringop-truncation -fno-omit-frame-pointer --std=c++17 -g -O3)
 
 # Directories
 include_directories(
     ${SRC_DIR}
+    ${EXTERNAL_DIR}
     ${EXTERNAL_DIR}/fast-cpp-csv-parser
     ${EXTERNAL_DIR}/Catch2
     ${Boost_INCLUDE_DIRS}

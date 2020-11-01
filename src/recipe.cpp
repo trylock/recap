@@ -52,7 +52,7 @@ std::string recap::to_string(recipe::slot_t slot)
 
 recap::recipe::slot_t recap::parse_slot(const std::string& slot)
 {
-    if (slot == "any") 
+    if (slot == "any" || slot == "all") 
     {
         return recipe::SLOT_ALL;
     }
