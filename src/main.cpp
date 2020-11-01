@@ -86,24 +86,12 @@ std::vector<recap::recipe> read_recipes(const std::string& path)
                 "minimal value must not be greater than maximal value." };
         }
 
-        recipe::slot_t slot_value = recipe::SLOT_NONE;
-        if (slot_name == "armour")
-        {
-            slot_value = recipe::SLOT_ARMOUR;
-        }
-        else if (slot_name == "jewelery")
-        {
-            slot_value = recipe::SLOT_JEWELERY;
-        }
-        else if (slot_name == "all")
-        {
-            slot_value = recipe::SLOT_ALL;
-        }
-        else 
+        recipe::slot_t slot_value = parse_slot(slot_name);
+        if (slot_value == recipe::SLOT_NONE)
         {
             throw invalid_input_error{ 
                 input.get_file_line(), 
-                "minimal value must not be greater than maximal value." };
+                "invalid slot: " + slot_name };
         }
 
         // generate recipes
@@ -168,19 +156,7 @@ void print_assignment(const std::vector<recap::recipe::slot_t>& slots, recap::as
         {
             const auto& recipe = assign.assignments()[i].used_recipe();
 
-            if (slots[i] == recipe::SLOT_ARMOUR)
-            {
-                print_cell("armour", width);
-            }
-            else if (slots[i] == recipe::SLOT_JEWELERY)
-            {
-                print_cell("jewelery", width);
-            }
-            else 
-            {
-                print_cell("<unknown>", width);
-            }
-
+            print_cell(to_string(slots[i]), width);
             print_cell(recipe.resistances().fire(), width);
             print_cell(recipe.resistances().cold(), width);
             print_cell(recipe.resistances().lightning(), width);
@@ -215,7 +191,7 @@ int main(int argc, char** argv)
 
     // input limits
     constexpr std::size_t MAX_ARMOUR_SLOT_COUNT = 7;
-    constexpr std::size_t MAX_JEWELERY_SLOT_COUNT = 3;
+    constexpr std::size_t MAX_JEWELRY_SLOT_COUNT = 3;
     constexpr std::size_t MAX_RECIPE_COUNT = 256;
 
     po::options_description desc{ "Allowed options" };
@@ -308,21 +284,21 @@ int main(int argc, char** argv)
             slots.push_back(recipe::SLOT_ARMOUR);
         }
 
-        auto jewelery_slot_count = vm["jewelery"].as<std::size_t>();
-        if (jewelery_slot_count > MAX_JEWELERY_SLOT_COUNT)
+        auto jewelry_slot_count = vm["jewelery"].as<std::size_t>();
+        if (jewelry_slot_count > MAX_JEWELRY_SLOT_COUNT)
         {
-            std::cerr << "Error: there can be at most " << MAX_JEWELERY_SLOT_COUNT << " jewelery slots." << std::endl;
+            std::cerr << "Error: there can be at most " << MAX_JEWELRY_SLOT_COUNT << " jewelery slots." << std::endl;
             return 1;
         }
 
-        for (std::size_t i = 0; i < jewelery_slot_count; ++i)
+        for (std::size_t i = 0; i < jewelry_slot_count; ++i)
         {
-            slots.push_back(recipe::SLOT_JEWELERY);
+            slots.push_back(recipe::SLOT_JEWELRY);
         }
 
         std::cout 
             << "Armour slots: " << armour_slot_cout << std::endl 
-            << "Jewelery slots: " << jewelery_slot_count << std::endl 
+            << "Jewelery slots: " << jewelry_slot_count << std::endl 
             << "Required: " 
                 << required.fire() << "% fire, "
                 << required.cold() << "% cold, "

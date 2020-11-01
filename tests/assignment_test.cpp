@@ -144,7 +144,7 @@ TEST_CASE("Only use recipes aplicable to a given slot", "[assignment]")
 
     std::vector<recipe> recipes{
         recipe{ resistance{ 0, 0, 0, 0 }, 0, recipe::SLOT_ALL },
-        recipe{ resistance{ 10, 0, 0, 0 }, 0, recipe::SLOT_JEWELERY },
+        recipe{ resistance{ 10, 0, 0, 0 }, 0, recipe::SLOT_JEWELRY },
     };
 
     auto result = find_assignment(resistance{ 5, 0, 0, 0 }, slots, recipes);
@@ -206,10 +206,10 @@ TEST_CASE("Different types of slots", "[assignment]")
         recipe{ resistance{ 20, 20, 0, 0 }, 10, recipe::SLOT_ALL },
         recipe{ resistance{ 20, 0, 20, 0 }, 10, recipe::SLOT_ALL },
         recipe{ resistance{ 0, 20, 20, 0 }, 10, recipe::SLOT_ALL },
-        recipe{ resistance{ 10, 10, 10, 0 }, 9, recipe::SLOT_JEWELERY },
-        recipe{ resistance{ 15, 0, 0, 15 }, 30, recipe::SLOT_JEWELERY },
-        recipe{ resistance{ 0, 15, 0, 15 }, 30, recipe::SLOT_JEWELERY },
-        recipe{ resistance{ 0, 0, 15, 15 }, 30, recipe::SLOT_JEWELERY },
+        recipe{ resistance{ 10, 10, 10, 0 }, 9, recipe::SLOT_JEWELRY },
+        recipe{ resistance{ 15, 0, 0, 15 }, 30, recipe::SLOT_JEWELRY },
+        recipe{ resistance{ 0, 15, 0, 15 }, 30, recipe::SLOT_JEWELRY },
+        recipe{ resistance{ 0, 0, 15, 15 }, 30, recipe::SLOT_JEWELRY },
     };
     resistance req{ 29, 37, 23, 17 };
 

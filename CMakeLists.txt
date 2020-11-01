@@ -13,6 +13,7 @@ set(recap_headers
 )
 
 set(recap_sources
+    ${SRC_DIR}/recipe.cpp
     ${SRC_DIR}/assignment.cpp
     ${SRC_DIR}/reassignment.cpp
 )
@@ -21,6 +22,7 @@ set(recap_cli ${SRC_DIR}/main.cpp)
 
 set(recap_tests 
     ${EXTERNAL_DIR}/Catch2/catch_amalgamated.cpp
+    ${TEST_DIR}/recipe_test.cpp
     ${TEST_DIR}/assignment_test.cpp
     ${TEST_DIR}/reassignment_test.cpp
 )

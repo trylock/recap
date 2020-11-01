@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <limits>
 #include <vector>
+#include <string>
 
 #include "resistance.hpp"
 
@@ -30,9 +31,9 @@ namespace recap
             // applicable to everything but ring and amulet
             SLOT_ARMOUR = SLOT_WEAPON1 | SLOT_WEAPON2 | SLOT_HELMET | SLOT_BODY | SLOT_BOOTS | SLOT_GLOVES | SLOT_BELT,
             // aplicable to ring and amulet
-            SLOT_JEWELERY = SLOT_RING1 | SLOT_RING2 | SLOT_AMULET,
+            SLOT_JEWELRY = SLOT_RING1 | SLOT_RING2 | SLOT_AMULET,
             // aplicable to everything
-            SLOT_ALL = SLOT_ARMOUR | SLOT_JEWELERY
+            SLOT_ALL = SLOT_ARMOUR | SLOT_JEWELRY
         };
 
         using cost_t = float;
@@ -84,6 +85,22 @@ namespace recap
         cost_t cost_;
         slot_t slots_;
     };
+
+    /** Convert @p slot to a human readable string
+     * 
+     * @param slot Recipe slot
+     * 
+     * @returns string representation of @p slot
+     */
+    std::string to_string(recipe::slot_t slot);
+
+    /** Parse slot from string @p value
+     * 
+     * @param value String with slot
+     * 
+     * @returns slot
+     */
+    recipe::slot_t parse_slot(const std::string& value);
 }
 
 #endif // RECAP_RECIPE_HPP_
