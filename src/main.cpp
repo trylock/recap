@@ -200,14 +200,14 @@ void print_assignment(std::ostream& output, const recap::assignment& assign)
     constexpr int col_count = 6;
 
     // print table cell
-    auto print_cell = [&output, width]() -> std::ostream&
+    auto print_cell = [&output]() -> std::ostream&
     {
         output << std::left << std::setw(width) << std::setfill(' ');
         return output;
     };
 
     // print line separator
-    auto print_sep = [&output, width, col_count]()
+    auto print_sep = [&output]()
     {
         for (std::size_t i = 0; i < width * col_count; ++i)
         {

@@ -36,7 +36,7 @@ find_package(TBB 2020 REQUIRED COMPONENTS tbb)
 find_package(Threads REQUIRED)
 
 # Compile options
-add_compile_options(-Wall -Wextra -pedantic -Wno-stringop-truncation -fno-omit-frame-pointer --std=c++17 -g -O3)
+add_compile_options(-Wall -Wextra -pedantic -fno-omit-frame-pointer --std=c++17 -g -O3)
 
 # Directories
 include_directories(

@@ -6,8 +6,11 @@
 #include <cstdint>
 #include <array>
 
+#include <tbb/partitioner.h>
 #include <tbb/parallel_for.h>
 #include <tbb/blocked_range3d.h>
+#define TBB_PREVIEW_BLOCKED_RANGE_ND 1
+#include <tbb/blocked_rangeNd.h>
 
 #include "recipe.hpp"
 #include "resistance.hpp"
@@ -48,7 +51,7 @@ namespace recap
     class assignment
     {
     public:
-        assignment() = default;
+        assignment() : cost_(recipe::MAX_COST) {}
 
         // Copyable
         assignment(const assignment&) = default;

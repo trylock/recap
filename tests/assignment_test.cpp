@@ -66,7 +66,7 @@ static void verify_assignment(
         return; // no solution is a valid answer
     }
 
-    REQUIRE(slots.size() == assign.assignments().size());
+    REQUIRE(assign.assignments().size() <= slots.size());
 
     std::size_t used_slots = 0;
     recap::resistance total_res = recap::resistance::make_zero();
