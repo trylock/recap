@@ -15,7 +15,6 @@ set(recap_headers
 set(recap_sources
     ${SRC_DIR}/recipe.cpp
     ${SRC_DIR}/assignment.cpp
-    ${SRC_DIR}/reassignment.cpp
 )
 
 set(recap_cli ${SRC_DIR}/main.cpp)

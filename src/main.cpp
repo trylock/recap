@@ -437,8 +437,10 @@ int main(int argc, char** argv)
 
             std::cout << std::endl;
 
+            parallel_assignment_algorithm algorithm;
+
             auto begin = std::chrono::steady_clock::now();
-            auto result = find_assignment(required, slots, recipes);
+            auto result = algorithm.run(required, slots, recipes);
             auto end = std::chrono::steady_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
 

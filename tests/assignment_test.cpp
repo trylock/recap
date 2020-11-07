@@ -96,7 +96,8 @@ TEST_CASE("Assignment fails if there are no recipes", "[assignment]")
 
     std::vector<recipe> recipes{};
 
-    auto result = find_assignment(resistance::make_zero(), slots, recipes);
+    parallel_assignment_algorithm alg;
+    auto result = alg.run(resistance::make_zero(), slots, recipes);
     REQUIRE(result.cost() == recipe::MAX_COST);
 }
 
@@ -112,7 +113,8 @@ TEST_CASE("Find assignment if we have 0 requirements", "[assignment]")
         recipe{ resistance{ 0, 0, 0, 0 }, 0, recipe::SLOT_ALL }
     };
 
-    auto result = find_assignment(resistance::make_zero(), slots, recipes);
+    parallel_assignment_algorithm alg;
+    auto result = alg.run(resistance::make_zero(), slots, recipes);
     REQUIRE(result.cost() == 0);
     REQUIRE(result.assignments().size() == 0);
 }
@@ -130,7 +132,8 @@ TEST_CASE("No solution with 1 slot", "[assignment]")
         recipe{ resistance{ 10, 0, 0, 0 }, 0, recipe::SLOT_ALL },
     };
 
-    auto result = find_assignment(resistance{ 11, 0, 0, 0 }, slots, recipes);
+    parallel_assignment_algorithm alg;
+    auto result = alg.run(resistance{ 11, 0, 0, 0 }, slots, recipes);
     REQUIRE(result.cost() == recipe::MAX_COST);
 }
 
@@ -147,7 +150,8 @@ TEST_CASE("Only use recipes aplicable to a given slot", "[assignment]")
         recipe{ resistance{ 10, 0, 0, 0 }, 0, recipe::SLOT_JEWELRY },
     };
 
-    auto result = find_assignment(resistance{ 5, 0, 0, 0 }, slots, recipes);
+    parallel_assignment_algorithm alg;
+    auto result = alg.run(resistance{ 5, 0, 0, 0 }, slots, recipes);
     REQUIRE(result.cost() == recipe::MAX_COST);
     REQUIRE(result.assignments().size() == 0);
 }
@@ -178,7 +182,8 @@ TEST_CASE("Returned assignment is optimal", "[assignment]")
     };
     resistance req{ 29, 37, 23, 17 };
 
-    auto result_dynamic = find_assignment(req, slots, recipes);
+    parallel_assignment_algorithm alg;
+    auto result_dynamic = alg.run(req, slots, recipes);
     verify_assignment(req, slots, result_dynamic);
 
     auto result_bf = find_assignment_bf(req, slots, recipes);
@@ -213,7 +218,8 @@ TEST_CASE("Different types of slots", "[assignment]")
     };
     resistance req{ 29, 37, 23, 17 };
 
-    auto result_dynamic = find_assignment(req, slots, recipes);
+    parallel_assignment_algorithm alg;
+    auto result_dynamic = alg.run(req, slots, recipes);
     verify_assignment(req, slots, result_dynamic);
 
     auto result_bf = find_assignment_bf(req, slots, recipes);
@@ -250,6 +256,9 @@ TEST_CASE("Exhaustive test", "[assignment][.][slow]")
     constexpr resistance::item_t MAX_VALUE = 30;
     constexpr resistance::item_t MAX_CHAOS = 2;
 
+    parallel_assignment_algorithm alg;
+    alg.initialize(resistance{ MAX_VALUE, MAX_VALUE, MAX_VALUE, MAX_CHAOS });
+
     for (resistance::item_t fire = 0; fire <= MAX_VALUE; ++fire)
     {
         for (resistance::item_t cold = 0; cold <= MAX_VALUE; ++cold)
@@ -260,7 +269,7 @@ TEST_CASE("Exhaustive test", "[assignment][.][slow]")
                 {
                     resistance req{ fire, cold, lightning, chaos };
 
-                    auto result_dynamic = find_assignment(req, slots, recipes);
+                    auto result_dynamic = alg.run(req, slots, recipes);
                     verify_assignment(req, slots, result_dynamic);
 
                     auto result_bf = find_assignment_bf(req, slots, recipes);

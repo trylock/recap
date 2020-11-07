@@ -1,13 +1,43 @@
 #include "assignment.hpp"
 
-recap::assignment recap::find_assignment(
+recap::parallel_assignment_algorithm::parallel_assignment_algorithm() 
+{
+    initialize(resistance::make_zero());
+}
+
+void recap::parallel_assignment_algorithm::initialize(resistance max_res)
+{
+    // find maximal number of table elements
+    std::size_t element_count = count_values(max_res);
+
+    // resize tables
+    best_cost_.resize(element_count);
+    next_best_cost_.resize(element_count);
+    best_assignment_.resize(element_count);
+    next_best_assignment_.resize(element_count);
+
+    // set maximal resistances to max_res after we succesfully allocate the memory
+    max_res_ = max_res;
+}
+
+recap::assignment recap::parallel_assignment_algorithm::run(
     resistance required, 
     const std::vector<recipe::slot_t>& slots, 
     const std::vector<recipe>& recipes)
 {
-    using recipe_index_t = std::uint8_t;
-    // maximum number of slots
-    constexpr std::size_t MAX_SLOT_COUNT = 16;
+    // Count number of distinct resistance values <= required
+    const resistance res_count{ 
+        static_cast<resistance::item_t>(required.fire() + 1), 
+        static_cast<resistance::item_t>(required.cold() + 1), 
+        static_cast<resistance::item_t>(required.lightning() + 1), 
+        static_cast<resistance::item_t>(required.chaos() + 1) 
+    };
+
+    // allocate memory if necessary
+    if (count_values(required) > count_values(max_res_))
+    {
+        initialize(required);
+    }
 
     // Check that we can fit all recipes into index type
     if (recipes.size() > std::numeric_limits<recipe_index_t>::max())
@@ -23,24 +53,8 @@ recap::assignment recap::find_assignment(
             std::to_string(MAX_SLOT_COUNT) +  " slots." };
     }
 
-    // Count number of distinct resistance values <= required
-    const auto res_count = resistance{ 
-        static_cast<resistance::item_t>(required.fire() + 1), 
-        static_cast<resistance::item_t>(required.cold() + 1), 
-        static_cast<resistance::item_t>(required.lightning() + 1), 
-        static_cast<resistance::item_t>(required.chaos() + 1) 
-    };
-    const auto value_count = static_cast<std::size_t>(res_count.fire()) * res_count.cold() * 
-        res_count.lightning() * res_count.chaos();
-
-    // allocate memory for cost table and best assignment table 
-    std::vector<recipe::cost_t> best_cost(value_count);
-    std::fill(best_cost.begin(), best_cost.end(), recipe::MAX_COST);
-    std::vector<std::array<recipe_index_t, MAX_SLOT_COUNT>> best_assignment(value_count);
-    
-    // allocate memory for the result so we can parallelize the computation
-    auto next_best_cost = best_cost;
-    auto next_best_assignment = best_assignment;
+    // initialize cost to MAX_COST
+    std::fill(best_cost_.begin(), best_cost_.end(), recipe::MAX_COST);
 
     // Convert resistance object to a linear index.
     // This is a one-to-one mapping from resistances < res_count to [0, value_count - 1]
@@ -54,12 +68,12 @@ recap::assignment recap::find_assignment(
     };
 
     // we can always satisfy the requirement of 0 resistances
-    best_cost[0] = 0;
+    best_cost_[0] = 0;
 
     for (std::size_t i = 0; i < slots.size(); ++i)
     {
         // initialize next cost with MAX_COST
-        std::fill(next_best_cost.begin(), next_best_cost.end(), recipe::MAX_COST);
+        std::fill(next_best_cost_.begin(), next_best_cost_.end(), recipe::MAX_COST);
 
         // compute next best costs (with 1 more item)
         tbb::blocked_rangeNd<resistance::item_t, 4> range{ 
@@ -93,12 +107,12 @@ recap::assignment recap::find_assignment(
                                 // construct resistance object from the values and find its index
                                 resistance current_resist{ fire, cold, lightning, chaos };
                                 auto current_index = to_index(current_resist);
-                                const auto& current_cost = next_best_cost[current_index];
+                                const auto& current_cost = next_best_cost_[current_index];
 
                                 // find required resistances if we use this recipe
                                 resistance prev_resist = current_resist - recipe.resistances();
                                 auto prev_index = to_index(prev_resist);
-                                const auto& prev_cost = best_cost[prev_index];
+                                const auto& prev_cost = best_cost_[prev_index];
 
                                 // if this path is better
                                 if (prev_cost + recipe.cost() < current_cost)
@@ -106,12 +120,12 @@ recap::assignment recap::find_assignment(
                                     // replace the recipe
                                     for (std::size_t j = 0; j < i; ++j)
                                     {
-                                        next_best_assignment[current_index][j] = best_assignment[prev_index][j];
+                                        next_best_assignment_[current_index][j] = best_assignment_[prev_index][j];
                                     }
-                                    next_best_assignment[current_index][i] = static_cast<recipe_index_t>(recipe_index);
+                                    next_best_assignment_[current_index][i] = static_cast<recipe_index_t>(recipe_index);
 
                                     // update the cost
-                                    next_best_cost[current_index] = prev_cost + recipe.cost();
+                                    next_best_cost_[current_index] = prev_cost + recipe.cost();
                                 }
                             }
                         }
@@ -120,14 +134,14 @@ recap::assignment recap::find_assignment(
             }
         }, partitioner);
 
-        std::swap(next_best_cost, best_cost);
-        std::swap(next_best_assignment, best_assignment);
+        std::swap(next_best_cost_, best_cost_);
+        std::swap(next_best_assignment_, best_assignment_);
     }
 
     // lookup the solution in the table
     auto result_index = to_index(required);
-    auto result_cost = best_cost[result_index];
-    auto result_assignment = best_assignment[result_index];
+    auto result_cost = best_cost_[result_index];
+    auto result_assignment = best_assignment_[result_index];
     
     // convert it to the output type
     assignment result;
