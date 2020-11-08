@@ -5,6 +5,8 @@
 #include <cstdint>
 #include <vector>
 #include <cstdint>
+#include <string>
+#include <exception>
 
 #include <cuda_runtime.h>
 
@@ -16,6 +18,26 @@
 
 namespace recap
 {
+    /** An error thrown if there is an error during CUDA API function execution
+     */
+    class cuda_error : public std::exception 
+    {
+    public: 
+        inline cuda_error(cudaError_t result, int line, const char* file)
+        {
+            msg_ = std::string{"CUDA error at "} + file + std::string{":"} + 
+                std::to_string(line) + " - " + cudaGetErrorString(result);
+        }
+
+        inline const char* what() const noexcept override 
+        {
+            return msg_.c_str();
+        }
+
+    private:
+        std::string msg_;
+    };
+
     /** Check return value of a cuda API function
      * 
      * @param result Return value of a cuda API function
@@ -26,11 +48,11 @@ namespace recap
     {
         if (result != cudaSuccess)
         {
-            std::cerr << "CUDA Error at " << file << ":" << line << " - " << cudaGetErrorString(result) << std::endl;
+            throw cuda_error{ result, line, file };
         }
     }
 
-    #define CUCHECK(result) ::recap::check_cuda_result((result), __LINE__, __FILE__)
+    #define CUCHECK(result) (::recap::check_cuda_result((result), __LINE__, __FILE__))
 
     /** Pointer to memory on the device (GPU)
      * 

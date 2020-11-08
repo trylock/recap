@@ -1,5 +1,7 @@
 cmake_minimum_required (VERSION 3.8.0)
 
+include(CheckLanguage)
+
 project(recap CXX CUDA)
 
 set(SRC_DIR ${PROJECT_SOURCE_DIR}/src)
@@ -17,10 +19,10 @@ set(recap_headers
 set(recap_sources
     ${SRC_DIR}/recipe.cpp
     ${SRC_DIR}/parallel_assignment_algorithm.cpp
-    ${SRC_DIR}/cuda_assignment_algorithm.cpp
 )
 
 set(recap_cuda 
+    ${SRC_DIR}/cuda_assignment_algorithm.cpp
     ${SRC_DIR}/cuda/assignment_kernel.cu
 )
 
@@ -33,9 +35,6 @@ set(recap_tests
     ${TEST_DIR}/reassignment_test.cpp
 )
 
-# CUDA
-enable_language("CUDA")
-
 # Dependencies
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
@@ -43,6 +42,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 find_package(Boost 1.71 REQUIRED COMPONENTS program_options)
 find_package(TBB 2020 REQUIRED COMPONENTS tbb)
 find_package(Threads REQUIRED)
+find_package(CUDA 10.0)
 
 # Directories
 include_directories(
@@ -53,7 +53,7 @@ include_directories(
     ${EXTERNAL_DIR}/Catch2
     ${Boost_INCLUDE_DIRS}
     ${TBB_INCLUDE_DIR}
-    /usr/local/cuda/include
+    ${CUDA_INCLUDE_DIRS}
 )
 
 link_directories(
@@ -61,8 +61,16 @@ link_directories(
     ${TBB_LIBRARY}
 )
 
+# check CUDA
+
+set(recap_all_sources ${recap_headers} ${recap_sources})
+if (CUDA_FOUND)
+    add_definitions(-DUSE_CUDA)
+    set(recap_all_sources ${recap_headers} ${recap_sources} ${recap_cuda})    
+endif()
+
 # Executables
-add_library(recap STATIC ${recap_headers} ${recap_sources} ${recap_cuda})
+add_library(recap STATIC ${recap_all_sources})
 add_executable(recap_cli ${recap_cli})
 add_executable(tests ${recap_tests})
 

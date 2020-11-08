@@ -105,7 +105,9 @@ TEST_CASE("Assignment fails if there are no recipes", "[assignment]")
     };
 
     run_test(parallel_assignment_algorithm{});
+#ifdef USE_CUDA
     run_test(cuda_assignment_algorithm{});
+#endif // USE_CUDA
 }
 
 TEST_CASE("Find assignment if we have 0 requirements", "[assignment]")
@@ -128,7 +130,9 @@ TEST_CASE("Find assignment if we have 0 requirements", "[assignment]")
     };
 
     run_test(parallel_assignment_algorithm{});
+#ifdef USE_CUDA
     run_test(cuda_assignment_algorithm{});
+#endif // USE_CUDA
 }
 
 TEST_CASE("No solution with 1 slot", "[assignment]")
@@ -151,7 +155,10 @@ TEST_CASE("No solution with 1 slot", "[assignment]")
     };
 
     run_test(parallel_assignment_algorithm{});
+    
+#ifdef USE_CUDA
     run_test(cuda_assignment_algorithm{});
+#endif // USE_CUDA
 }
 
 TEST_CASE("Only use recipes aplicable to a given slot", "[assignment]")
@@ -175,7 +182,10 @@ TEST_CASE("Only use recipes aplicable to a given slot", "[assignment]")
     };
 
     run_test(parallel_assignment_algorithm{});
+    
+#ifdef USE_CUDA
     run_test(cuda_assignment_algorithm{});
+#endif // USE_CUDA
 }
 
 TEST_CASE("Returned assignment is optimal", "[assignment]")
@@ -216,7 +226,10 @@ TEST_CASE("Returned assignment is optimal", "[assignment]")
     };
 
     run_test(parallel_assignment_algorithm{});
+    
+#ifdef USE_CUDA
     run_test(cuda_assignment_algorithm{});
+#endif // USE_CUDA
 }
 
 TEST_CASE("Different types of slots", "[assignment]")
@@ -257,59 +270,67 @@ TEST_CASE("Different types of slots", "[assignment]")
     };
 
     run_test(parallel_assignment_algorithm{});
+#ifdef USE_CUDA
     run_test(cuda_assignment_algorithm{});
+#endif // USE_CUDA
 }
 
 TEST_CASE("Exhaustive test", "[assignment][.][slow]")
 {
     using namespace recap;
 
-    std::vector<recipe::slot_t> slots{
-        recipe::SLOT_BODY,
-        recipe::SLOT_HELMET,
-        recipe::SLOT_GLOVES,
-        recipe::SLOT_BOOTS
-    };
-
-    std::vector<recipe> recipes{
-        recipe{ resistance{ 0, 0, 0, 0 }, 0, recipe::SLOT_ALL },
-        recipe{ resistance{ 30, 0, 0, 0 }, 30, recipe::SLOT_ALL },
-        recipe{ resistance{ 0, 30, 0, 0 }, 30, recipe::SLOT_ALL },
-        recipe{ resistance{ 0, 0, 30, 0 }, 30, recipe::SLOT_ALL },
-        recipe{ resistance{ 20, 20, 0, 0 }, 10, recipe::SLOT_ALL },
-        recipe{ resistance{ 20, 0, 20, 0 }, 10, recipe::SLOT_ALL },
-        recipe{ resistance{ 0, 20, 20, 0 }, 10, recipe::SLOT_ALL },
-        recipe{ resistance{ 10, 10, 10, 0 }, 9, recipe::SLOT_ALL },
-        recipe{ resistance{ 15, 0, 0, 15 }, 30, recipe::SLOT_ALL },
-        recipe{ resistance{ 0, 15, 0, 15 }, 30, recipe::SLOT_ALL },
-        recipe{ resistance{ 0, 0, 15, 15 }, 30, recipe::SLOT_ALL },
-    };
-
     constexpr resistance::item_t MAX_VALUE = 30;
     constexpr resistance::item_t MAX_CHAOS = 2;
 
-    parallel_assignment_algorithm alg;
-    alg.initialize(resistance{ MAX_VALUE, MAX_VALUE, MAX_VALUE, MAX_CHAOS });
-
-    for (resistance::item_t fire = 0; fire <= MAX_VALUE; ++fire)
+    auto run_test = [](auto&& algorithm)
     {
-        for (resistance::item_t cold = 0; cold <= MAX_VALUE; ++cold)
+        std::vector<recipe::slot_t> slots{
+            recipe::SLOT_BODY,
+            recipe::SLOT_HELMET,
+            recipe::SLOT_GLOVES,
+            recipe::SLOT_BOOTS
+        };
+
+        std::vector<recipe> recipes{
+            recipe{ resistance{ 0, 0, 0, 0 }, 0, recipe::SLOT_ALL },
+            recipe{ resistance{ 30, 0, 0, 0 }, 30, recipe::SLOT_ALL },
+            recipe{ resistance{ 0, 30, 0, 0 }, 30, recipe::SLOT_ALL },
+            recipe{ resistance{ 0, 0, 30, 0 }, 30, recipe::SLOT_ALL },
+            recipe{ resistance{ 20, 20, 0, 0 }, 10, recipe::SLOT_ALL },
+            recipe{ resistance{ 20, 0, 20, 0 }, 10, recipe::SLOT_ALL },
+            recipe{ resistance{ 0, 20, 20, 0 }, 10, recipe::SLOT_ALL },
+            recipe{ resistance{ 10, 10, 10, 0 }, 9, recipe::SLOT_ALL },
+            recipe{ resistance{ 15, 0, 0, 15 }, 30, recipe::SLOT_ALL },
+            recipe{ resistance{ 0, 15, 0, 15 }, 30, recipe::SLOT_ALL },
+            recipe{ resistance{ 0, 0, 15, 15 }, 30, recipe::SLOT_ALL },
+        };
+
+        algorithm.initialize(resistance{ MAX_VALUE, MAX_VALUE, MAX_VALUE, MAX_CHAOS });
+
+        for (resistance::item_t fire = 0; fire <= MAX_VALUE; ++fire)
         {
-            for (resistance::item_t lightning = 0; lightning <= MAX_VALUE; ++lightning)
+            for (resistance::item_t cold = 0; cold <= MAX_VALUE; ++cold)
             {
-                for (resistance::item_t chaos = 0; chaos <= MAX_CHAOS; ++chaos)
+                for (resistance::item_t lightning = 0; lightning <= MAX_VALUE; ++lightning)
                 {
-                    resistance req{ fire, cold, lightning, chaos };
+                    for (resistance::item_t chaos = 0; chaos <= MAX_CHAOS; ++chaos)
+                    {
+                        resistance req{ fire, cold, lightning, chaos };
 
-                    auto result_dynamic = alg.run(req, slots, recipes);
-                    verify_assignment(req, slots, result_dynamic);
+                        auto result_dynamic = algorithm.run(req, slots, recipes);
+                        verify_assignment(req, slots, result_dynamic);
 
-                    auto result_bf = find_assignment_bf(req, slots, recipes);
-                    verify_assignment(req, slots, result_bf);
-                    
-                    REQUIRE(result_dynamic.cost() == result_bf.cost());
+                        auto result_bf = find_assignment_bf(req, slots, recipes);
+                        verify_assignment(req, slots, result_bf);
+                        
+                        REQUIRE(result_dynamic.cost() == result_bf.cost());
+                    }
                 }
             }
         }
-    }
+    };
+    run_test(parallel_assignment_algorithm{});
+#ifdef USE_CUDA
+    run_test(cuda_assignment_algorithm{});
+#endif // USE_CUDA
 }

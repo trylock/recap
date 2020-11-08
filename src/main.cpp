@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <cmath>
 #include <chrono>
+#include <memory>
 
 #include <csv.h>
 #include <rang.hpp>
@@ -303,6 +304,76 @@ recap::resistance read_resistance_arg(const std::string& name, boost::program_op
     };
 }
 
+class algorithm
+{
+public:
+   virtual ~algorithm() {}
+
+    /** Get name of the algorithm
+     * 
+     * @returns name of the algorithm
+     */
+    virtual const char* name() const = 0; 
+
+    virtual recap::assignment run_assignment(
+        recap::resistance required, 
+        const std::vector<recap::recipe::slot_t>& slots, 
+        const std::vector<recap::recipe>& recipes) = 0;
+
+    virtual recap::assignment run_reassignment(
+        recap::resistance current_resistances, 
+        recap::resistance max_resistances, 
+        const std::vector<recap::equipment>& items,
+        const std::vector<recap::recipe>& recipes) = 0;
+};
+
+template<class Algorithm>
+class algorithm_base : public algorithm
+{
+public:
+    virtual ~algorithm_base() {}
+
+    recap::assignment run_assignment(
+        recap::resistance required, 
+        const std::vector<recap::recipe::slot_t>& slots, 
+        const std::vector<recap::recipe>& recipes) override
+    {
+        Algorithm alg;
+        return alg.run(required, slots, recipes);
+    }
+
+    recap::assignment run_reassignment(
+        recap::resistance current_resistances, 
+        recap::resistance max_resistances, 
+        const std::vector<recap::equipment>& items,
+        const std::vector<recap::recipe>& recipes) override 
+    {
+        return recap::find_minimal_reassignment<Algorithm>(current_resistances, max_resistances, items, recipes);
+    }
+};
+
+class parallel_algorithm : public algorithm_base<recap::parallel_assignment_algorithm>
+{
+public:
+    virtual ~parallel_algorithm() {}
+
+    const char* name() const override 
+    {
+        return "parallel";
+    }
+};
+
+class cuda_algorithm : public algorithm_base<recap::cuda_assignment_algorithm>
+{
+public:
+    virtual ~cuda_algorithm() {}
+
+    const char* name() const override 
+    {
+        return "cuda";
+    }
+};
+
 int main(int argc, char** argv)
 {
     using namespace recap;
@@ -314,11 +385,30 @@ int main(int argc, char** argv)
     constexpr std::size_t MAX_JEWELRY_SLOT_COUNT = 3;
     constexpr std::size_t MAX_RECIPE_COUNT = 256;
 
+    // available algorithms
+    std::vector<std::unique_ptr<algorithm>> algorithms;
+#ifdef USE_CUDA
+    algorithms.emplace_back(std::make_unique<cuda_algorithm>());
+#endif // USE_CUDA
+    algorithms.emplace_back(std::make_unique<parallel_algorithm>());
+
+    // find names of available algorithms
+    std::string available_algorithms = "";
+    for (auto&& alg : algorithms)
+    {
+        if (available_algorithms.size() > 0)
+        {
+            available_algorithms += ", ";
+        }
+        available_algorithms += alg->name();
+    }
+
     po::options_description desc{ "Allowed options" };
     desc.add_options()
         ("help,h", "show help message")
         ("input,i", po::value<std::string>(), "path to a file with all available recipes")
         ("equip,e", po::value<std::string>(), "path to a file with all your equipment")
+        ("with,w", po::value<std::string>()->default_value("parallel"), "used assignment algorithm (available: parallel, cuda)")
         ("armour,a", po::value<std::size_t>()->default_value(7), "number of armour slots")
         ("jewelery,j", po::value<std::size_t>()->default_value(3), "number of jewelery slots")
         ("required,r", po::value<std::vector<resistance::item_t>>()->multitoken(), 
@@ -351,16 +441,34 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    if (!vm.count("input"))
+    // check that all required options are present
+    std::array<std::string, 2> required{ "input", "required" };
+    for (auto&& r : required)
     {
-        std::cerr << "Error: specify path to a file with available recipes." << std::endl;
-        return 1;
+        if (!vm.count(r))
+        {
+            std::cerr << "Error: argument --" << r << " is mandatory" << std::endl;
+            return 1;
+        }
     }
 
-    // validate required resistances
-    if (!vm.count("required"))
+    // validate algorithm
+    auto alg_name = vm["with"].as<std::string>();
+    algorithm* alg = nullptr;
+    for (auto&& item : algorithms)
     {
-        std::cerr << "Error: specify required resistances" << std::endl;
+        if (item->name() == alg_name)
+        {
+            alg = item.get();
+            break;
+        }
+    }
+
+    if (alg == nullptr)
+    {
+        std::cerr 
+            << "Error: --algorithm '" << alg_name
+            << "' is invalid. Valid values are: " << available_algorithms << std::endl;
         return 1;
     }
 
@@ -412,7 +520,11 @@ int main(int argc, char** argv)
             << required.cold() << "% cold, "
             << required.lightning() << "% lightning, "
             << required.chaos() << "% chaos " << std::endl;
+        
+        std::cout << "Using " << alg->name() <<  " algorithm ..." << std::endl;
 
+        // run the assignment/reassignment algorithm
+        assignment result;
         if (vm.count("equip"))
         {
             // read current resistances
@@ -423,7 +535,7 @@ int main(int argc, char** argv)
 
             // find reassignment
             auto begin = std::chrono::steady_clock::now();
-            auto result = find_minimal_reassignment<cuda_assignment_algorithm>(current, required, items, recipes);
+            result = alg->run_reassignment(current, required, items, recipes);
             auto end = std::chrono::steady_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
 
@@ -437,11 +549,9 @@ int main(int argc, char** argv)
                 << "Jewelery slots: " << jewelry_slot_count << std::endl;
 
             std::cout << std::endl;
-
-            cuda_assignment_algorithm algorithm;
-
+            
             auto begin = std::chrono::steady_clock::now();
-            auto result = algorithm.run(required, slots, recipes);
+            result = alg->run_assignment(required, slots, recipes);
             auto end = std::chrono::steady_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
 
@@ -460,6 +570,11 @@ int main(int argc, char** argv)
         return 1;
     }
     catch (io::error::base& err)
+    {
+        std::cerr << err.what() << std::endl;
+        return 1;
+    }
+    catch (cuda_error& err)
     {
         std::cerr << err.what() << std::endl;
         return 1;
