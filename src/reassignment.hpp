@@ -8,6 +8,8 @@
 #include "resistance.hpp"
 #include "recipe.hpp"
 #include "assignment.hpp"
+#include "parallel_assignment_algorithm.hpp"
+#include "cuda_assignment_algorithm.hpp"
 
 namespace recap
 {
@@ -96,7 +98,7 @@ namespace recap
      * 
      * @returns Assignment of crafting recipes to items 
      */
-    template<class AssignmentAlgorithm = parallel_assignment_algorithm>
+    template<class AssignmentAlgorithm>
     assignment find_minimal_reassignment(
         resistance current_resistances, 
         resistance max_resistances, 
@@ -178,6 +180,7 @@ namespace recap
 
             // find minimal cost assignment using current subset of items
             auto assign = algorithm.run(req, slots, recipes);
+            
             if (assign.cost() < min_assignment.cost())
             {
                 min_assignment = assign;

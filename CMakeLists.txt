@@ -1,6 +1,8 @@
-cmake_minimum_required (VERSION 3.1.0)
+cmake_minimum_required (VERSION 3.8.0)
 
-project(recap)
+include(CheckLanguage)
+
+project(recap CXX CUDA)
 
 set(SRC_DIR ${PROJECT_SOURCE_DIR}/src)
 set(EXTERNAL_DIR ${PROJECT_SOURCE_DIR}/external)
@@ -10,11 +12,18 @@ set(recap_headers
     ${SRC_DIR}/resistance.hpp
     ${SRC_DIR}/assignment.hpp
     ${SRC_DIR}/reassignment.hpp
+    ${SRC_DIR}/parallel_assignment_algorithm.hpp
+    ${SRC_DIR}/cuda_assignment_algorithm.hpp
 )
 
 set(recap_sources
     ${SRC_DIR}/recipe.cpp
-    ${SRC_DIR}/assignment.cpp
+    ${SRC_DIR}/parallel_assignment_algorithm.cpp
+)
+
+set(recap_cuda 
+    ${SRC_DIR}/cuda_assignment_algorithm.cpp
+    ${SRC_DIR}/cuda/assignment_kernel.cu
 )
 
 set(recap_cli ${SRC_DIR}/main.cpp)
@@ -33,18 +42,18 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 find_package(Boost 1.71 REQUIRED COMPONENTS program_options)
 find_package(TBB 2020 REQUIRED COMPONENTS tbb)
 find_package(Threads REQUIRED)
-
-# Compile options
-add_compile_options(-Wall -Wextra -pedantic -fno-omit-frame-pointer --std=c++17 -g -O3)
+find_package(CUDA 10.0)
 
 # Directories
 include_directories(
     ${SRC_DIR}
+    ${SRC_DIR}/cuda
     ${EXTERNAL_DIR}
     ${EXTERNAL_DIR}/fast-cpp-csv-parser
     ${EXTERNAL_DIR}/Catch2
     ${Boost_INCLUDE_DIRS}
     ${TBB_INCLUDE_DIR}
+    ${CUDA_INCLUDE_DIRS}
 )
 
 link_directories(
@@ -52,10 +61,26 @@ link_directories(
     ${TBB_LIBRARY}
 )
 
+# check CUDA
+
+set(recap_all_sources ${recap_headers} ${recap_sources})
+if (CUDA_FOUND)
+    add_definitions(-DUSE_CUDA)
+    set(recap_all_sources ${recap_headers} ${recap_sources} ${recap_cuda})    
+endif()
+
 # Executables
-add_library(recap ${recap_headers} ${recap_sources})
+add_library(recap STATIC ${recap_all_sources})
 add_executable(recap_cli ${recap_cli})
 add_executable(tests ${recap_tests})
+
+# Compile options
+target_compile_options(recap PUBLIC 
+    $<$<COMPILE_LANGUAGE:CXX>:-Wall -Wextra -pedantic -fno-omit-frame-pointer --std=c++17 -g -O3>
+    $<$<COMPILE_LANGUAGE:CUDA>:--std=c++17 -g -O3 -arch compute_52>
+)
+
+set_target_properties(recap PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
 # Link
 target_link_libraries(recap_cli 
