@@ -1,5 +1,5 @@
-#ifndef RECAP_CUDA_ASSIGNMENT_ALGORITHM_HPP_
-#define RECAP_CUDA_ASSIGNMENT_ALGORITHM_HPP_
+#ifndef RECAP_CUDA_ASSIGNMENT_HPP_
+#define RECAP_CUDA_ASSIGNMENT_HPP_
 
 #include <iostream>
 #include <cstdint>
@@ -14,7 +14,7 @@
 #include "resistance.hpp"
 #include "assignment.hpp"
 #include "assignment_kernel.hpp"
-#include "parallel_assignment_algorithm.hpp"
+#include "assignment_algorithm.hpp"
 
 namespace recap
 {
@@ -136,6 +136,10 @@ namespace recap
         template<typename Range>
         void copy_to_gpu(Range&& range, std::size_t count)
         {
+            if (count <= 0)
+            {
+                return;
+            }
             assert(ptr_ != nullptr);
             assert(count <= count_);
             CUCHECK(cudaMemcpy(ptr_, &range[0], count * sizeof(T), cudaMemcpyHostToDevice));
@@ -159,6 +163,10 @@ namespace recap
         template<typename Range>
         void copy_from_gpu(Range&& range, std::size_t count)
         {
+            if (count <= 0)
+            {
+                return;
+            }
             assert(ptr_ != nullptr);
             assert(count <= count_);
             CUCHECK(cudaMemcpy(&range[0], ptr_, count * sizeof(T), cudaMemcpyDeviceToHost));
@@ -181,7 +189,7 @@ namespace recap
 
     /** This class uses CUDA to solve the recipe assignment problem
      */
-    class cuda_assignment_algorithm
+    class cuda_assignment : public assignment_algorithm
     {
     public:
         // maximal number of equipment slots
@@ -192,21 +200,29 @@ namespace recap
         // Recipe cost type
         using cost_t = recipe::cost_t;
 
-        cuda_assignment_algorithm();
+        cuda_assignment();
+        virtual ~cuda_assignment() {}
 
         // Non-copyable
-        cuda_assignment_algorithm(const cuda_assignment_algorithm&) = delete;
-        cuda_assignment_algorithm& operator=(const cuda_assignment_algorithm&) = delete;
+        cuda_assignment(const cuda_assignment&) = delete;
+        cuda_assignment& operator=(const cuda_assignment&) = delete;
 
         // Movable
-        cuda_assignment_algorithm(cuda_assignment_algorithm&&) = default;
-        cuda_assignment_algorithm& operator=(cuda_assignment_algorithm&&) = default;
+        cuda_assignment(cuda_assignment&&) = default;
+        cuda_assignment& operator=(cuda_assignment&&) = default;
 
-        /** Allocate memory for the algorithm
+        /** Identifier of this algorithms
          * 
-         * @param max_res Maximal used resistances
+         * @returns name of this algorithm
          */
-        void initialize(resistance max_res);
+        const char* name() const override;
+
+        /** Allocate memory for problem instances
+         * 
+         * @param max_resistances Maximal number of resistances
+         * @param max_recipes Maximal number of recipes
+         */
+        void initialize(resistance max_resistances, std::size_t max_recipes) override;
 
         /** Find assignment of @p recipes to equipment @p slots which minimizes cost and 
          * has at least @p required resistances.
@@ -217,14 +233,12 @@ namespace recap
          * 
          * @return assignment of recipes to slots or invalid assingment object if assignment is not possible.
          */
-        assignment run(
+        assignment find_minimal_assignment(
             resistance required, 
             const std::vector<recipe::slot_t>& slots, 
-            const std::vector<recipe>& recipes);
+            const std::vector<recipe>& recipes) override;
 
     private:
-        resistance max_res_;
-
         // CPU memory
         std::vector<cost_t> output_cost_;
         std::vector<recipe_index_t> output_assignment_;
@@ -264,4 +278,4 @@ namespace recap
     };
 }
 
-#endif // RECAP_CUDA_ASSIGNMENT_ALGORITHM_HPP_
+#endif // RECAP_CUDA_ASSIGNMENT_HPP_

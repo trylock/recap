@@ -1,5 +1,5 @@
-#ifndef RECAP_PARALLEL_ASSIGNMENT_ALGORITHM_HPP_
-#define RECAP_PARALLEL_ASSIGNMENT_ALGORITHM_HPP_
+#ifndef RECAP_PARALLEL_ASSIGNMENT_HPP_
+#define RECAP_PARALLEL_ASSIGNMENT_HPP_
 
 #include <vector>
 #include <cassert>
@@ -15,13 +15,13 @@
 #include "recipe.hpp"
 #include "resistance.hpp"
 #include "assignment.hpp"
+#include "assignment_algorithm.hpp"
 
 namespace recap
 {
-
     /** Dynamic programming algorithm which uses TBB to parallelize the computation.
      */
-    class parallel_assignment_algorithm 
+    class parallel_assignment : public assignment_algorithm
     {
     public:
         // maximal number of equipment slots
@@ -34,21 +34,30 @@ namespace recap
         // Type used internally to store assignment
         using internal_assignment_t = std::array<recipe_index_t, MAX_SLOT_COUNT>;
 
-        parallel_assignment_algorithm();
+        parallel_assignment();
+
+        virtual ~parallel_assignment() {}
 
         // Non-copyable
-        parallel_assignment_algorithm(const parallel_assignment_algorithm&) = delete;
-        parallel_assignment_algorithm& operator=(const parallel_assignment_algorithm&) = delete;
+        parallel_assignment(const parallel_assignment&) = delete;
+        parallel_assignment& operator=(const parallel_assignment&) = delete;
 
         // Movable
-        parallel_assignment_algorithm(parallel_assignment_algorithm&&) = default;
-        parallel_assignment_algorithm& operator=(parallel_assignment_algorithm&&) = default;
+        parallel_assignment(parallel_assignment&&) = default;
+        parallel_assignment& operator=(parallel_assignment&&) = default;
 
-        /** Allocate memory for the algorithm
+        /** Identifier of this algorithms
          * 
-         * @param max_res Maximal used resistances
+         * @returns name of this algorithm
          */
-        void initialize(resistance max_res);
+        const char* name() const override;
+
+        /** Allocate memory for problem instances
+         * 
+         * @param max_resistances Maximal number of resistances
+         * @param max_recipes Maximal number of recipes
+         */
+        void initialize(resistance max_resistances, std::size_t max_recipes) override;
 
         /** Find assignment of @p recipes to equipment @p slots which minimizes cost and 
          * has at least @p required resistances.
@@ -59,27 +68,12 @@ namespace recap
          * 
          * @return assignment of recipes to slots or invalid assingment object if assignment is not possible.
          */
-        assignment run(
+        assignment find_minimal_assignment(
             resistance required, 
             const std::vector<recipe::slot_t>& slots, 
-            const std::vector<recipe>& recipes);
+            const std::vector<recipe>& recipes) override;
 
-        /** Count number of distinct values <= res
-         * 
-         * @param res Resistances
-         * 
-         * @returns number of distinct resistance values <= @p res
-         */
-        inline static std::size_t count_values(resistance res) 
-        {
-            std::size_t value_count = res.fire() + 1;
-            value_count *= res.cold() + 1;
-            value_count *= res.lightning() + 1;
-            value_count *= res.chaos() + 1;
-            return value_count;
-        }
     private:
-        resistance max_res_;
         std::vector<cost_t> best_cost_;
         std::vector<cost_t> next_best_cost_;
         std::vector<internal_assignment_t> best_assignment_;
@@ -87,4 +81,4 @@ namespace recap
     };
 }
 
-#endif // RECAP_PARALLEL_ASSIGNMENT_ALGORITHM_HPP_
+#endif // RECAP_PARALLEL_ASSIGNMENT_HPP_

@@ -1,13 +1,17 @@
-#include "cuda_assignment_algorithm.hpp"
+#include "cuda_assignment.hpp"
 
-recap::cuda_assignment_algorithm::cuda_assignment_algorithm()
+recap::cuda_assignment::cuda_assignment()
 {
-    initialize(resistance::make_zero());
 }
 
-void recap::cuda_assignment_algorithm::initialize(resistance max_res)
+const char* recap::cuda_assignment::name() const 
 {
-    auto value_count = parallel_assignment_algorithm::count_values(max_res);
+    return "cuda";
+}
+
+void recap::cuda_assignment::initialize(resistance max_res, std::size_t max_recipes)
+{
+    auto value_count = count_values(max_res);
 
     // allocate CPU buffers where we will store the result
     output_cost_.resize(value_count);
@@ -20,7 +24,6 @@ void recap::cuda_assignment_algorithm::initialize(resistance max_res)
     next_best_assignment_.allocate(value_count * MAX_SLOT_COUNT);
 
     // allocate memory for recipes
-    auto max_recipes = std::numeric_limits<recipe_index_t>::max() + 1;
     buffer_cost_.resize(max_recipes);
     buffer_slot_.resize(max_recipes);
     buffer_resist_.resize(max_recipes);
@@ -29,11 +32,9 @@ void recap::cuda_assignment_algorithm::initialize(resistance max_res)
     recipe_cost_.allocate(max_recipes);
     recipe_slot_.allocate(max_recipes);
     recipe_resist_.allocate(max_recipes);
-
-    max_res_ = max_res;
 }
 
-void recap::cuda_assignment_algorithm::set_recipes(cuda::input_data& input, const std::vector<recipe>& recipes)
+void recap::cuda_assignment::set_recipes(cuda::input_data& input, const std::vector<recipe>& recipes)
 {
     // copy recipes to GPU
     for (std::size_t i = 0; i < recipes.size(); ++i)
@@ -58,9 +59,9 @@ void recap::cuda_assignment_algorithm::set_recipes(cuda::input_data& input, cons
     input.recipes.count = recipes.size();
 }
 
-void recap::cuda_assignment_algorithm::set_table_size(cuda::input_data& input, resistance req)
+void recap::cuda_assignment::set_table_size(cuda::input_data& input, resistance req)
 {
-    auto value_count = parallel_assignment_algorithm::count_values(req);
+    auto value_count = count_values(req);
 
     input.table_size = value_count;
     input.table_dim.x = req.fire() + 1;
@@ -69,7 +70,7 @@ void recap::cuda_assignment_algorithm::set_table_size(cuda::input_data& input, r
     input.table_dim.w = req.chaos() + 1;
 }
 
-void recap::cuda_assignment_algorithm::set_table_buffers(cuda::input_data& input, std::size_t value_count)
+void recap::cuda_assignment::set_table_buffers(cuda::input_data& input, std::size_t value_count)
 {
     // initialize cost to MAX_COST
     std::fill(output_cost_.begin(), output_cost_.begin() + value_count, recipe::MAX_COST);
@@ -83,16 +84,17 @@ void recap::cuda_assignment_algorithm::set_table_buffers(cuda::input_data& input
     input.best_assignment = best_assignment_.get();
 }
 
-recap::assignment recap::cuda_assignment_algorithm::run(
+recap::assignment recap::cuda_assignment::find_minimal_assignment(
     resistance required, 
     const std::vector<recipe::slot_t>& slots, 
     const std::vector<recipe>& recipes)
 {
     // if we need to allocate more memory
-    auto value_count = parallel_assignment_algorithm::count_values(required);
-    if (value_count > output_cost_.size())
+    auto value_count = count_values(required);
+    if (value_count > output_cost_.size() || 
+        buffer_cost_.size() > recipes.size())
     {
-        initialize(required);
+        initialize(required, recipes.size());
     }
 
     // Check that we can fit all recipes into index type
