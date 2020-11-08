@@ -109,12 +109,37 @@ namespace recap
         /** Copy data from @p range to GPU 
          * 
          * @param range Values to copy
+         * @param count Number of items to copy
+         */
+        template<typename Range>
+        void copy_to_gpu(Range&& range, std::size_t count)
+        {
+            assert(ptr_ != nullptr);
+            assert(count <= count_);
+            CUCHECK(cudaMemcpy(ptr_, &range[0], count * sizeof(T), cudaMemcpyHostToDevice));
+        }
+
+        /** Copy data from @p range to GPU 
+         * 
+         * @param range Values to copy
          */
         template<typename Range>
         void copy_to_gpu(Range&& range)
         {
+            copy_to_gpu(std::forward<Range>(range), count_);
+        }
+
+        /** Copy data to @p range from GPU 
+         * 
+         * @param range Destination
+         * @param count Number of items to copy
+         */
+        template<typename Range>
+        void copy_from_gpu(Range&& range, std::size_t count)
+        {
             assert(ptr_ != nullptr);
-            CUCHECK(cudaMemcpy(ptr_, &range[0], count_ * sizeof(T), cudaMemcpyHostToDevice));
+            assert(count <= count_);
+            CUCHECK(cudaMemcpy(&range[0], ptr_, count * sizeof(T), cudaMemcpyDeviceToHost));
         }
 
         /** Copy data to @p range from GPU 
@@ -124,8 +149,7 @@ namespace recap
         template<typename Range>
         void copy_from_gpu(Range&& range)
         {
-            assert(ptr_ != nullptr);
-            CUCHECK(cudaMemcpy(&range[0], ptr_, count_ * sizeof(T), cudaMemcpyDeviceToHost));
+            copy_from_gpu(range, count_);
         }
 
     private:

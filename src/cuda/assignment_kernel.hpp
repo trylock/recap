@@ -45,7 +45,7 @@ namespace recap
 
         struct output_data
         {
-            // Array of best costs in this iteration
+            // Array of best costs in this iteration 
             float* best_cost;
             // Best assignemnts (indices of recipes) in this iteration
             std::uint8_t* best_assignment;

@@ -69,6 +69,8 @@ __global__ void assignment_kernel(
     const recap::cuda::input_data input, 
     recap::cuda::output_data output)
 {
+    constexpr std::size_t MAX_SLOT_COUNT = recap::cuda::MAX_SLOT_COUNT;
+
     auto current_index = blockIdx.x * blockDim.x + threadIdx.x;
     if (current_index >= input.table_size)
     {
@@ -89,13 +91,12 @@ __global__ void assignment_kernel(
     {
         output.best_cost[current_index] = prev_cost + input.recipe_cost;
 
-        for (int i = 0; i < recap::cuda::MAX_SLOT_COUNT; ++i)
-        {
-            auto current_slot_index = current_index * recap::cuda::MAX_SLOT_COUNT + i;
-            auto prev_slot_index = prev_index * recap::cuda::MAX_SLOT_COUNT + i;
-            output.best_assignment[current_slot_index] = input.best_assignment[prev_slot_index];
-        }
-        output.best_assignment[current_index * recap::cuda::MAX_SLOT_COUNT + input.slot_index] = input.recipe_index;
+        memcpy(
+            output.best_assignment + current_index * MAX_SLOT_COUNT,
+            input.best_assignment + prev_index * MAX_SLOT_COUNT,
+            MAX_SLOT_COUNT
+        );
+        output.best_assignment[current_index * MAX_SLOT_COUNT + input.slot_index] = input.recipe_index;
     }
 }
 

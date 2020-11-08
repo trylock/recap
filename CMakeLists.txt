@@ -68,8 +68,8 @@ add_executable(tests ${recap_tests})
 
 # Compile options
 target_compile_options(recap PUBLIC 
-    $<$<COMPILE_LANGUAGE:CXX>:-Wall -Wextra -pedantic -fno-omit-frame-pointer --std=c++17 -g>
-    $<$<COMPILE_LANGUAGE:CUDA>:--std=c++17 -g>
+    $<$<COMPILE_LANGUAGE:CXX>:-Wall -Wextra -pedantic -fno-omit-frame-pointer --std=c++17 -g -O3>
+    $<$<COMPILE_LANGUAGE:CUDA>:--std=c++17 -g -O3 -arch compute_52>
 )
 
 set_target_properties(recap PROPERTIES CUDA_SEPARABLE_COMPILATION ON)

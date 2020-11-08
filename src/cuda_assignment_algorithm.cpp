@@ -28,7 +28,8 @@ recap::assignment recap::cuda_assignment_algorithm::run(
     const std::vector<recipe>& recipes)
 {
     // if we need to allocate more memory
-    if (parallel_assignment_algorithm::count_values(required) > output_cost_.size())
+    auto value_count = parallel_assignment_algorithm::count_values(required);
+    if (value_count > output_cost_.size())
     {
         initialize(required);
     }
@@ -48,20 +49,20 @@ recap::assignment recap::cuda_assignment_algorithm::run(
     }
 
     // initialize cost to MAX_COST
-    std::fill(output_cost_.begin(), output_cost_.end(), recipe::MAX_COST);
+    std::fill(output_cost_.begin(), output_cost_.begin() + value_count, recipe::MAX_COST);
 
     // 0 is always satisfiable
     output_cost_[0] = 0;
 
     // copy current cost to GPU
-    best_cost_.copy_to_gpu(output_cost_);
-    next_best_cost_.copy_to_gpu(output_cost_);
+    best_cost_.copy_to_gpu(output_cost_, value_count);
+    next_best_cost_.copy_to_gpu(output_cost_, value_count);
 
     // construct kernel arguments
     cuda::input_data input;
     input.best_cost = best_cost_.get();
     input.best_assignment = best_assignment_.get();
-    input.table_size = output_cost_.size();
+    input.table_size = value_count;
     input.table_dim.x = required.fire() + 1;
     input.table_dim.y = required.cold() + 1;
     input.table_dim.z = required.lightning() + 1;
@@ -72,12 +73,12 @@ recap::assignment recap::cuda_assignment_algorithm::run(
     output.best_assignment = next_best_assignment_.get();
 
     // fill output_cost_ with MAX_COST so we can use it to fill next_best_cost_ each iteration
-    std::fill(output_cost_.begin(), output_cost_.end(), recipe::MAX_COST);
+    std::fill(output_cost_.begin(), output_cost_.begin() + value_count, recipe::MAX_COST);
 
     for (std::uint8_t i = 0; i < slots.size(); ++i)
     {
         // reset output costs to MAX_COST
-        next_best_cost_.copy_to_gpu(output_cost_);
+        next_best_cost_.copy_to_gpu(output_cost_, value_count);
 
         // set current slot
         input.slot_index = i;
@@ -115,8 +116,8 @@ recap::assignment recap::cuda_assignment_algorithm::run(
     }
 
     // get results from GPU
-    best_cost_.copy_from_gpu(output_cost_);
-    best_assignment_.copy_from_gpu(output_assignment_);
+    best_cost_.copy_from_gpu(output_cost_, value_count);
+    best_assignment_.copy_from_gpu(output_assignment_, value_count * MAX_SLOT_COUNT);
 
     // Count number of distinct resistance values <= required
     const resistance res_count{ 

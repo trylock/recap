@@ -8,6 +8,8 @@
 #include "resistance.hpp"
 #include "recipe.hpp"
 #include "assignment.hpp"
+#include "parallel_assignment_algorithm.hpp"
+#include "cuda_assignment_algorithm.hpp"
 
 namespace recap
 {
@@ -178,6 +180,7 @@ namespace recap
 
             // find minimal cost assignment using current subset of items
             auto assign = algorithm.run(req, slots, recipes);
+            
             if (assign.cost() < min_assignment.cost())
             {
                 min_assignment = assign;
