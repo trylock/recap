@@ -13,6 +13,7 @@
 #include "recipe.hpp"
 #include "assignment.hpp"
 #include "reassignment.hpp"
+#include "cuda_assignment_algorithm.hpp"
 
 // exception thrown if input values are invalid
 class invalid_input_error : public std::exception
@@ -422,7 +423,7 @@ int main(int argc, char** argv)
 
             // find reassignment
             auto begin = std::chrono::steady_clock::now();
-            auto result = find_minimal_reassignment(current, required, items, recipes);
+            auto result = find_minimal_reassignment<cuda_assignment_algorithm>(current, required, items, recipes);
             auto end = std::chrono::steady_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
 
@@ -437,7 +438,7 @@ int main(int argc, char** argv)
 
             std::cout << std::endl;
 
-            parallel_assignment_algorithm algorithm;
+            cuda_assignment_algorithm algorithm;
 
             auto begin = std::chrono::steady_clock::now();
             auto result = algorithm.run(required, slots, recipes);

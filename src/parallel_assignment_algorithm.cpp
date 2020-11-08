@@ -1,4 +1,4 @@
-#include "assignment.hpp"
+#include "parallel_assignment_algorithm.hpp"
 
 recap::parallel_assignment_algorithm::parallel_assignment_algorithm() 
 {

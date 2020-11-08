@@ -96,7 +96,7 @@ namespace recap
      * 
      * @returns Assignment of crafting recipes to items 
      */
-    template<class AssignmentAlgorithm = parallel_assignment_algorithm>
+    template<class AssignmentAlgorithm>
     assignment find_minimal_reassignment(
         resistance current_resistances, 
         resistance max_resistances, 
