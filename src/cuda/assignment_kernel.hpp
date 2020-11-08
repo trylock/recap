@@ -16,7 +16,7 @@ namespace recap
         using resistance_t = resistance::item_t;
 
         // maximal number of equipment slots
-        inline static constexpr std::size_t MAX_SLOT_COUNT = 16;
+        inline static constexpr std::size_t MAX_SLOT_COUNT = 10;
 
         template<typename T>
         struct vector4

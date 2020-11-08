@@ -13,8 +13,9 @@
 #include "resistance.hpp"
 #include "recipe.hpp"
 #include "assignment.hpp"
-#include "reassignment.hpp"
-#include "cuda_assignment_algorithm.hpp"
+#include "equipment.hpp"
+#include "cuda_assignment.hpp"
+#include "parallel_assignment.hpp"
 
 // exception thrown if input values are invalid
 class invalid_input_error : public std::exception
@@ -304,76 +305,6 @@ recap::resistance read_resistance_arg(const std::string& name, boost::program_op
     };
 }
 
-class algorithm
-{
-public:
-   virtual ~algorithm() {}
-
-    /** Get name of the algorithm
-     * 
-     * @returns name of the algorithm
-     */
-    virtual const char* name() const = 0; 
-
-    virtual recap::assignment run_assignment(
-        recap::resistance required, 
-        const std::vector<recap::recipe::slot_t>& slots, 
-        const std::vector<recap::recipe>& recipes) = 0;
-
-    virtual recap::assignment run_reassignment(
-        recap::resistance current_resistances, 
-        recap::resistance max_resistances, 
-        const std::vector<recap::equipment>& items,
-        const std::vector<recap::recipe>& recipes) = 0;
-};
-
-template<class Algorithm>
-class algorithm_base : public algorithm
-{
-public:
-    virtual ~algorithm_base() {}
-
-    recap::assignment run_assignment(
-        recap::resistance required, 
-        const std::vector<recap::recipe::slot_t>& slots, 
-        const std::vector<recap::recipe>& recipes) override
-    {
-        Algorithm alg;
-        return alg.run(required, slots, recipes);
-    }
-
-    recap::assignment run_reassignment(
-        recap::resistance current_resistances, 
-        recap::resistance max_resistances, 
-        const std::vector<recap::equipment>& items,
-        const std::vector<recap::recipe>& recipes) override 
-    {
-        return recap::find_minimal_reassignment<Algorithm>(current_resistances, max_resistances, items, recipes);
-    }
-};
-
-class parallel_algorithm : public algorithm_base<recap::parallel_assignment_algorithm>
-{
-public:
-    virtual ~parallel_algorithm() {}
-
-    const char* name() const override 
-    {
-        return "parallel";
-    }
-};
-
-class cuda_algorithm : public algorithm_base<recap::cuda_assignment_algorithm>
-{
-public:
-    virtual ~cuda_algorithm() {}
-
-    const char* name() const override 
-    {
-        return "cuda";
-    }
-};
-
 int main(int argc, char** argv)
 {
     using namespace recap;
@@ -386,11 +317,11 @@ int main(int argc, char** argv)
     constexpr std::size_t MAX_RECIPE_COUNT = 256;
 
     // available algorithms
-    std::vector<std::unique_ptr<algorithm>> algorithms;
+    std::vector<std::unique_ptr<assignment_algorithm>> algorithms;
 #ifdef USE_CUDA
-    algorithms.emplace_back(std::make_unique<cuda_algorithm>());
+    algorithms.emplace_back(std::make_unique<cuda_assignment>());
 #endif // USE_CUDA
-    algorithms.emplace_back(std::make_unique<parallel_algorithm>());
+    algorithms.emplace_back(std::make_unique<parallel_assignment>());
 
     // find names of available algorithms
     std::string available_algorithms = "";
@@ -454,7 +385,7 @@ int main(int argc, char** argv)
 
     // validate algorithm
     auto alg_name = vm["with"].as<std::string>();
-    algorithm* alg = nullptr;
+    assignment_algorithm* alg = nullptr;
     for (auto&& item : algorithms)
     {
         if (item->name() == alg_name)
@@ -535,7 +466,7 @@ int main(int argc, char** argv)
 
             // find reassignment
             auto begin = std::chrono::steady_clock::now();
-            result = alg->run_reassignment(current, required, items, recipes);
+            result = alg->find_minimal_reassignment(current, required, items, recipes);
             auto end = std::chrono::steady_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
 
@@ -551,7 +482,7 @@ int main(int argc, char** argv)
             std::cout << std::endl;
             
             auto begin = std::chrono::steady_clock::now();
-            result = alg->run_assignment(required, slots, recipes);
+            result = alg->find_minimal_assignment(required, slots, recipes);
             auto end = std::chrono::steady_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
 

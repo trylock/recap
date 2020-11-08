@@ -9,20 +9,23 @@ set(EXTERNAL_DIR ${PROJECT_SOURCE_DIR}/external)
 set(TEST_DIR ${PROJECT_SOURCE_DIR}/tests)
 
 set(recap_headers
+    ${SRC_DIR}/recipe.hpp
     ${SRC_DIR}/resistance.hpp
     ${SRC_DIR}/assignment.hpp
-    ${SRC_DIR}/reassignment.hpp
-    ${SRC_DIR}/parallel_assignment_algorithm.hpp
-    ${SRC_DIR}/cuda_assignment_algorithm.hpp
+    ${SRC_DIR}/equipment.hpp
+    ${SRC_DIR}/algorithms/assignment_algorithm.hpp
+    ${SRC_DIR}/algorithms/cuda_assignment.hpp
+    ${SRC_DIR}/algorithms/parallel_assignment.hpp
 )
 
 set(recap_sources
     ${SRC_DIR}/recipe.cpp
-    ${SRC_DIR}/parallel_assignment_algorithm.cpp
+    ${SRC_DIR}/algorithms/assignment_algorithm.cpp
+    ${SRC_DIR}/algorithms/parallel_assignment.cpp
 )
 
 set(recap_cuda 
-    ${SRC_DIR}/cuda_assignment_algorithm.cpp
+    ${SRC_DIR}/algorithms/cuda_assignment.cpp
     ${SRC_DIR}/cuda/assignment_kernel.cu
 )
 
@@ -48,6 +51,7 @@ find_package(CUDA 10.0)
 include_directories(
     ${SRC_DIR}
     ${SRC_DIR}/cuda
+    ${SRC_DIR}/algorithms
     ${EXTERNAL_DIR}
     ${EXTERNAL_DIR}/fast-cpp-csv-parser
     ${EXTERNAL_DIR}/Catch2

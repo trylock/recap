@@ -1,7 +1,6 @@
 #include "catch_amalgamated.hpp"
-#include "reassignment.hpp"
-#include "parallel_assignment_algorithm.hpp"
-#include "cuda_assignment_algorithm.hpp"
+#include "parallel_assignment.hpp"
+#include "cuda_assignment.hpp"
 
 void verify_reassignment(
     const std::vector<recap::equipment>& items, 
@@ -68,7 +67,8 @@ TEST_CASE("Replace an item with the same resistances", "[reassignment]")
     resistance current{ 20, 20, 20, 0 };
     resistance req{ 20, 20, 20, 0 };
 
-    auto result = find_minimal_reassignment<parallel_assignment_algorithm>(current, req, items, recipes);
+    parallel_assignment algorithm;
+    auto result = algorithm.find_minimal_reassignment(current, req, items, recipes);
     REQUIRE(result.cost() == 2);
     verify_reassignment(items, result, current, req);
 }
@@ -94,7 +94,8 @@ TEST_CASE("No solution", "[reassignment]")
     resistance current{ 20, 20, 20, 0 };
     resistance req{ 20, 20, 20, 0 };
 
-    auto result = find_minimal_reassignment<parallel_assignment_algorithm>(current, req, items, recipes);
+    parallel_assignment algorithm;
+    auto result = algorithm.find_minimal_reassignment(current, req, items, recipes);
     REQUIRE(result.cost() == recipe::MAX_COST);
     REQUIRE(result.assignments().size() == 0);
 }

@@ -1,11 +1,15 @@
-#include "parallel_assignment_algorithm.hpp"
+#include "parallel_assignment.hpp"
 
-recap::parallel_assignment_algorithm::parallel_assignment_algorithm() 
+recap::parallel_assignment::parallel_assignment() 
 {
-    initialize(resistance::make_zero());
 }
 
-void recap::parallel_assignment_algorithm::initialize(resistance max_res)
+const char* recap::parallel_assignment::name() const 
+{
+    return "parallel";
+}
+
+void recap::parallel_assignment::initialize(resistance max_res, std::size_t)
 {
     // find maximal number of table elements
     std::size_t element_count = count_values(max_res);
@@ -15,12 +19,9 @@ void recap::parallel_assignment_algorithm::initialize(resistance max_res)
     next_best_cost_.resize(element_count);
     best_assignment_.resize(element_count);
     next_best_assignment_.resize(element_count);
-
-    // set maximal resistances to max_res after we succesfully allocate the memory
-    max_res_ = max_res;
 }
 
-recap::assignment recap::parallel_assignment_algorithm::run(
+recap::assignment recap::parallel_assignment::find_minimal_assignment(
     resistance required, 
     const std::vector<recipe::slot_t>& slots, 
     const std::vector<recipe>& recipes)
@@ -34,9 +35,9 @@ recap::assignment recap::parallel_assignment_algorithm::run(
     };
 
     // allocate memory if necessary
-    if (count_values(required) > count_values(max_res_))
+    if (count_values(required) > best_cost_.size())
     {
-        initialize(required);
+        initialize(required, recipes.size());
     }
 
     // Check that we can fit all recipes into index type

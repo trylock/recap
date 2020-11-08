@@ -1,5 +1,5 @@
 #include "catch_amalgamated.hpp"
-#include "reassignment.hpp"
+#include "recipe.hpp"
 
 TEST_CASE("Serialize and deserialize slot", "[recipe]")
 {
