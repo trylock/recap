@@ -206,12 +206,39 @@ namespace recap
         // CPU memory
         std::vector<cost_t> output_cost_;
         std::vector<recipe_index_t> output_assignment_;
+        std::vector<cost_t> buffer_cost_;
+        std::vector<recipe::slot_t> buffer_slot_;
+        std::vector<cuda::vector4<resistance::item_t>> buffer_resist_;
 
         // GPU buffers
         gpu_ptr<cost_t> best_cost_;
         gpu_ptr<cost_t> next_best_cost_;
         gpu_ptr<recipe_index_t> best_assignment_;
         gpu_ptr<recipe_index_t> next_best_assignment_;
+        gpu_ptr<cost_t> recipe_cost_;
+        gpu_ptr<recipe::slot_t> recipe_slot_;
+        gpu_ptr<cuda::vector4<resistance::item_t>> recipe_resist_;
+
+        /** Add recipes to input data
+         * 
+         * @param input Input data
+         * @param recipes Available recipes
+         */
+        void set_recipes(cuda::input_data& input, const std::vector<recipe>& recipes);
+
+        /** Set table size and table dimensions in @p input
+         * 
+         * @param input Input data
+         * @param req Required resistances
+         */
+        void set_table_size(cuda::input_data& input, resistance req);
+
+        /** Initialize best cost in @p input data
+         * 
+         * @param input Input dat
+         * @param value_count Table size
+         */
+        void set_table_buffers(cuda::input_data& input, std::size_t value_count);
     };
 }
 

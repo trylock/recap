@@ -3,6 +3,7 @@
 
 #include <cuda_runtime.h>
 #include <cstdint>
+#include <cmath>
 
 #include "assignment.hpp"
 #include "resistance.hpp"
@@ -23,6 +24,18 @@ namespace recap
             T x, y, z, w;
         };
 
+        struct recipes_data
+        {
+            // Resistances of provided by recipes
+            const vector4<resistance_t>* resistances;
+            // Cost of recipes
+            const recipe::cost_t* costs;
+            // Recipe slots
+            const recipe::slot_t* slots;
+            // Number of recipes
+            std::uint32_t count;
+        };
+
         struct input_data
         {
             // Array of best costs from previous iteration
@@ -33,12 +46,10 @@ namespace recap
             std::uint32_t table_size;
             // Maximal resistances
             vector4<resistance_t> table_dim;
-            // Resistances providied by current recipe
-            vector4<resistance_t> recipe_resist;
-            // Cost of this recipe
-            recipe::cost_t recipe_cost;
-            // index of this recipe 
-            std::uint8_t recipe_index;
+            // Available recipes
+            recipes_data recipes;
+            // Current slot mask
+            recipe::slot_t slot;
             // index of a slot
             std::uint8_t slot_index;
         };

@@ -19,7 +19,68 @@ void recap::cuda_assignment_algorithm::initialize(resistance max_res)
     best_assignment_.allocate(value_count * MAX_SLOT_COUNT);
     next_best_assignment_.allocate(value_count * MAX_SLOT_COUNT);
 
+    // allocate memory for recipes
+    auto max_recipes = std::numeric_limits<recipe_index_t>::max() + 1;
+    buffer_cost_.resize(max_recipes);
+    buffer_slot_.resize(max_recipes);
+    buffer_resist_.resize(max_recipes);
+
+    // allocate memory for recipes on GPU
+    recipe_cost_.allocate(max_recipes);
+    recipe_slot_.allocate(max_recipes);
+    recipe_resist_.allocate(max_recipes);
+
     max_res_ = max_res;
+}
+
+void recap::cuda_assignment_algorithm::set_recipes(cuda::input_data& input, const std::vector<recipe>& recipes)
+{
+    // copy recipes to GPU
+    for (std::size_t i = 0; i < recipes.size(); ++i)
+    {
+        const auto& recipe = recipes[i];
+
+        buffer_cost_[i] = recipe.cost();
+        buffer_slot_[i] = recipe.slots();
+        buffer_resist_[i].x = recipe.resistances().fire();
+        buffer_resist_[i].y = recipe.resistances().cold();
+        buffer_resist_[i].z = recipe.resistances().lightning();
+        buffer_resist_[i].w = recipe.resistances().chaos();
+    }
+    recipe_cost_.copy_to_gpu(buffer_cost_, recipes.size());
+    recipe_slot_.copy_to_gpu(buffer_slot_, recipes.size());
+    recipe_resist_.copy_to_gpu(buffer_resist_, recipes.size());
+
+    // update input data
+    input.recipes.costs = recipe_cost_.get();
+    input.recipes.slots = recipe_slot_.get();
+    input.recipes.resistances = recipe_resist_.get();
+    input.recipes.count = recipes.size();
+}
+
+void recap::cuda_assignment_algorithm::set_table_size(cuda::input_data& input, resistance req)
+{
+    auto value_count = parallel_assignment_algorithm::count_values(req);
+
+    input.table_size = value_count;
+    input.table_dim.x = req.fire() + 1;
+    input.table_dim.y = req.cold() + 1;
+    input.table_dim.z = req.lightning() + 1;
+    input.table_dim.w = req.chaos() + 1;
+}
+
+void recap::cuda_assignment_algorithm::set_table_buffers(cuda::input_data& input, std::size_t value_count)
+{
+    // initialize cost to MAX_COST
+    std::fill(output_cost_.begin(), output_cost_.begin() + value_count, recipe::MAX_COST);
+    output_cost_[0] = 0;
+
+    // copy current cost to GPU
+    best_cost_.copy_to_gpu(output_cost_, value_count);
+
+    // update input data
+    input.best_cost = best_cost_.get();
+    input.best_assignment = best_assignment_.get();
 }
 
 recap::assignment recap::cuda_assignment_algorithm::run(
@@ -48,62 +109,25 @@ recap::assignment recap::cuda_assignment_algorithm::run(
             std::to_string(MAX_SLOT_COUNT) +  " slots." };
     }
 
-    // initialize cost to MAX_COST
-    std::fill(output_cost_.begin(), output_cost_.begin() + value_count, recipe::MAX_COST);
-
-    // 0 is always satisfiable
-    output_cost_[0] = 0;
-
-    // copy current cost to GPU
-    best_cost_.copy_to_gpu(output_cost_, value_count);
-    next_best_cost_.copy_to_gpu(output_cost_, value_count);
-
     // construct kernel arguments
     cuda::input_data input;
-    input.best_cost = best_cost_.get();
-    input.best_assignment = best_assignment_.get();
-    input.table_size = value_count;
-    input.table_dim.x = required.fire() + 1;
-    input.table_dim.y = required.cold() + 1;
-    input.table_dim.z = required.lightning() + 1;
-    input.table_dim.w = required.chaos() + 1;
+    set_table_size(input, required);
+    set_table_buffers(input, value_count);
+    set_recipes(input, recipes);
 
     cuda::output_data output;
     output.best_cost = next_best_cost_.get();
     output.best_assignment = next_best_assignment_.get();
 
-    // fill output_cost_ with MAX_COST so we can use it to fill next_best_cost_ each iteration
-    std::fill(output_cost_.begin(), output_cost_.begin() + value_count, recipe::MAX_COST);
-
     for (std::uint8_t i = 0; i < slots.size(); ++i)
     {
-        // reset output costs to MAX_COST
-        next_best_cost_.copy_to_gpu(output_cost_, value_count);
-
         // set current slot
         input.slot_index = i;
+        input.slot = slots[i];
 
-        for (recipe_index_t j = 0; j < recipes.size(); ++j)
-        {
-            const auto& recipe = recipes[j];
-
-            // if this recipe is not aplicable for slot i
-            if ((recipe.slots() & slots[i]) == 0)
-            {
-                continue; // skip this recipe
-            }
-
-            // set current recipe
-            input.recipe_resist.x = recipe.resistances().fire();
-            input.recipe_resist.y = recipe.resistances().cold();
-            input.recipe_resist.z = recipe.resistances().lightning();
-            input.recipe_resist.w = recipe.resistances().chaos();
-            input.recipe_cost = recipe.cost();
-            input.recipe_index = j;
-
-            cuda::run_assignment_kernel(input, output);
-            CUCHECK(cudaDeviceSynchronize());
-        }
+        // compute table with i slots
+        cuda::run_assignment_kernel(input, output);
+        CUCHECK(cudaDeviceSynchronize());
 
         // swap buffers
         std::swap(next_best_cost_, best_cost_);

@@ -70,6 +70,7 @@ __global__ void assignment_kernel(
     recap::cuda::output_data output)
 {
     constexpr std::size_t MAX_SLOT_COUNT = recap::cuda::MAX_SLOT_COUNT;
+    constexpr recap::recipe::cost_t MAX_COST = INFINITY;
 
     auto current_index = blockIdx.x * blockDim.x + threadIdx.x;
     if (current_index >= input.table_size)
@@ -79,25 +80,45 @@ __global__ void assignment_kernel(
 
     // find resistances at current index
     auto current_resist = index_to_vector(current_index, input.table_dim);
-    auto current_cost = output.best_cost[current_index];
+    auto best_cost = MAX_COST;
+    auto best_index = current_index;
+    auto best_recipe_index = 0;
 
-    // find resistances if we use assigned recipe
-    auto prev_resist = index_vector_sub(current_resist, input.recipe_resist);
-    auto prev_index = vector_to_index(prev_resist, input.table_dim);
-    auto prev_cost = input.best_cost[prev_index];
-
-    // if using the recipe is better then current best solution, update the solution
-    if (current_cost > prev_cost + input.recipe_cost)
+    for (int i = 0; i < input.recipes.count; ++i)
     {
-        output.best_cost[current_index] = prev_cost + input.recipe_cost;
+        auto recipe_cost = input.recipes.costs[i];
+        auto recipe_resist = input.recipes.resistances[i];
+        auto recipe_slots = input.recipes.slots[i];
 
-        memcpy(
-            output.best_assignment + current_index * MAX_SLOT_COUNT,
-            input.best_assignment + prev_index * MAX_SLOT_COUNT,
-            MAX_SLOT_COUNT
-        );
-        output.best_assignment[current_index * MAX_SLOT_COUNT + input.slot_index] = input.recipe_index;
+        if ((input.slot & recipe_slots) == 0)
+        {
+            continue;
+        }
+
+        // find resistances if we use assigned recipe
+        auto prev_resist = index_vector_sub(current_resist, recipe_resist);
+        auto prev_index = vector_to_index(prev_resist, input.table_dim);
+        auto prev_cost = input.best_cost[prev_index];
+
+        // if using the recipe is better then current best solution, update the solution
+        if (best_cost > prev_cost + recipe_cost)
+        {
+            best_cost = prev_cost + recipe_cost;
+            best_index = prev_index;
+            best_recipe_index = i;
+        }
     }
+
+    // set best cost of this table cell
+    output.best_cost[current_index] = best_cost;
+
+    // set best assignment for this cell
+    memcpy(
+        output.best_assignment + current_index * MAX_SLOT_COUNT,
+        input.best_assignment + best_index * MAX_SLOT_COUNT,
+        MAX_SLOT_COUNT
+    );
+    output.best_assignment[current_index * MAX_SLOT_COUNT + input.slot_index] = best_recipe_index;
 }
 
 void recap::cuda::run_assignment_kernel(const input_data input, output_data output)
